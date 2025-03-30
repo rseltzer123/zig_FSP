@@ -71,7 +71,7 @@ fn runFileInputs(file: std.fs.File, comptime WriterType: type, writer: WriterTyp
             const index = lineSplitIt.next() orelse "";
             printVal = try handleLine(defRes, seg, index, &counter);
         } else {
-            printVal = try handleLine(defRes, "", "", &counter);
+            printVal = try handleLine(defRes, null, null, &counter);
         }
 
         const bytes = try writer.print("command: {?s}\n", .{printVal});
