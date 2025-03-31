@@ -87,16 +87,15 @@ const print = std.debug.print;
 
 pub fn main() !void {
     const stdin = std.io.getStdIn().reader();
-    var buffer : [1028]u8 = undefined;
+    var buffer : [256]u8 = undefined;
     print("Please write a valid file path: \n", .{});
     var isGoodPath = false;
     while (!isGoodPath) {
         // get path from the user
         const path =  try stdin.readUntilDelimiterOrEof(buffer[0..], '\n');
-
-        // convert path from ?[]u8 to []const u8
+            // convert path from ?[]u8 to []const u8
         if (path) |value| {
-            const path_val: []const u8 = value;
+            const path_val = std.mem.trim(u8, value, " \r\n");
 
             var dir = std.fs.cwd().openDir(path_val,  .{.iterate = true}) catch |err| {
                 print("ERROR: {}\n", .{err});
