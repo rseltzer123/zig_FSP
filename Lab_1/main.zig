@@ -5,7 +5,7 @@
 
 
 const std = @import("std");
-const parser = @import("parser.zig");
+const parserFile = @import("parser.zig");
 const DIR_FILE_TYPE = std.fs.File.Kind.file;
 
 const print = std.debug.print;
@@ -29,7 +29,7 @@ pub fn main() !void {
 
     // Directory input from user taken from Lab 0
     const stdin = std.io.getStdIn().reader();
-    var parsedFile: parser = undefined;
+    var parser: parserFile.Parser = undefined;
     var buffer : [256]u8 = undefined;
     print("Please write a valid file path: \n", .{});
     var isGoodPath = false;
@@ -58,9 +58,10 @@ pub fn main() !void {
             while(try dir_it.next()) |entry| {
 
                 if (entry.kind == DIR_FILE_TYPE and std.mem.endsWith(u8,  entry.name, ".vm")){
-                    const file = try std.fs.Dir.openFile(dir, entry.name, .{}); // fixed this line
+                    const file = try std.fs.Dir.openFile(dir, entry.name, .{});
                     defer file.close();
-                    parsedFile = parser.newParser(file);
+                    parser = parserFile.Parser.newParser(file);
+
                 }
             }
         } else {
@@ -68,11 +69,35 @@ pub fn main() !void {
         }
     }
 
-    // Parsing the file and passing each parse to CodeWriter
-    // var i = 0;
-    // while (parsedFile.lines[i] != len(parsedFile.lines)){
-    //
-    // }
+    while (parser.hasMoreCommands()){
+        // first advance and if it's at the start it'll read the first command and doesn't increment the counter (although we could change that)
+        parser.advance();
+        const cmdType = parser.current_command;
+
+        //put proper instructions in each one, just not sure how we're implememtning codewriter
+        switch (cmdType) {
+            .arithmetic => {
+                return 0;
+            },
+
+            .arithmeticUnary => {
+                return 0;
+            },
+
+            .push => {
+                return 0;
+            },
+
+            .pop => {
+                return 0;
+            },
+
+            else => {
+                print("else.", .{});
+            }
+
+        }
+    }
 
 }
 
