@@ -10,33 +10,36 @@ pub fn trimComments(line: []const u8) []const u8{
     return line[0..comment_index];
 }
 pub const CommandType = enum {
-    arithmetic, // e.g. add, sub, neg, eq, gt, lt, and, or, not
+    start,  //placeholder for starting the program
+    arithmetic, // e.g. add, sub, eq, gt, lt, and, or
+    arithmeticUnary, // neg, not
     push,       // push segment i
-    pop        // pop segment i
+    pop,        // pop segment i
+    eof,        // eof
+    placeholder,        //placeholder for all the commands that will be implemented later
+    // label,
+    // goto,
+    // ifGoto,
+    // function,
+    // call,
+    // returnType,
 };
 
-pub const Command = struct {
-    command_type: CommandType,
-    arg1: []const u8, // For arithmetic, this holds the operation (e.g. "add")
-    arg2: ?i32,      // For push/pop, holds the index; null for arithmetic commands
-};
-
-
+// The Parser structure holds the source lines, the current command index, and the current command in a parsed format.
 pub const Parser = struct {
     lines: []const [3][]const u8, // dynamically sized array of 3-element arrays
     current_index: usize,
-    current_command: ?Command, // Will be set when advance() is called
+    current_command: CommandType, // Will be set when advance() is called
 
+    // Reads the .vm file content, splits it into lines, and removes comments/whitespace.
     pub fn newParser(file: std.fs.File) !Parser {
         const allocator = std.heap.page_allocator;
 
         var reader = std.io.bufferedReader(file.reader());
         var stream = reader.reader();
 
-        // var lines: [100][3] []const u8 = undefined;
         var lines_list = std.ArrayList([3][]const u8).init(allocator);
 
-        // var i: usize = 0;
         while (true){
             const line = stream.readUntilDelimiterOrEofAlloc(allocator, '\n', 1024) catch |err|{
                 print("ERROR: {}\n", .{err});
@@ -77,24 +80,112 @@ pub const Parser = struct {
             }
 
             try lines_list.append(row);
-            //i +=1;
             print("\n", .{});
         }
 
         return Parser{
             .lines = try lines_list.toOwnedSlice(),
             .current_index = 0,
-            .current_command = null,
+            .current_command = CommandType.start,
         };
     }
 
-    pub fn hasMoreCommands() bool{
+    // Returns whether there are additional commands to process.
+    pub fn hasMoreCommands(self: *Parser) bool{
         // checks cuurent command and returns false if current command is the last command
-        return true;
+        return self.current_index < (self.lines.len - 1);
     }
 
+    // Reads the next command, parses it, and sets current_command.
+    pub fn advance(self: *Parser) void{
+        // if the number of rows in the lines array is the same as the current index then the code is completed
+        if (self.current_index == (self.lines.len - 1)){
+            self.current_command = CommandType.eof;
+            return;
+        }
+        // if we've just started reading the file
+        if (self.current_command == CommandType.start){
+            self.current_command = commandType(self.lines[self.current_index][0]);
+            return;
+        }
 
+        self.current_index += 1;
+        self.current_command = commandType(self.lines[self.current_index][0]);
+    }
 
+    // Returns the type of the current command.
+    pub fn commandType(command: []const u8) CommandType{
+        // Had to do this with a bunch of ifs because you can't switch on strings in zig
+
+        // Arithmetic Commands
+        if (std.mem.eql(u8, command, "add")){ return CommandType.arithmetic;}
+        if (std.mem.eql(u8, command, "sub")){ return CommandType.arithmetic;}
+
+        if (std.mem.eql(u8, command, "eq")){ return CommandType.arithmetic;}
+        if (std.mem.eql(u8, command, "gt")){ return CommandType.arithmetic;}
+        if (std.mem.eql(u8, command, "lt")){ return CommandType.arithmetic;}
+        if (std.mem.eql(u8, command, "and")){ return CommandType.arithmetic;}
+        if (std.mem.eql(u8, command, "or")){ return CommandType.arithmetic;}
+
+        // Arithmetic Unary Commands
+        if (std.mem.eql(u8, command, "not")){ return CommandType.arithmeticUnary;}
+        if (std.mem.eql(u8, command, "neg")){ return CommandType.arithmeticUnary;}
+
+        // Push
+        if (std.mem.eql(u8, command, "push")){ return CommandType.push;}
+
+        // Pop
+        if (std.mem.eql(u8, command, "pop")){ return CommandType.pop;}
+
+        return CommandType.placeholder;
+    }
+
+    // Returns the first argument of an arithmetic current command.
+    pub fn arg1Arithmetic(self: *Parser) i32{
+        if (self.current_command == CommandType.arithmetic or self.current_command == CommandType.arithmeticUnary){
+            //return CodeWriter.pop();
+        }
+        else{
+            print("ERROR: command is not an arithmetic command.", .{});
+            return undefined;
+        }
+    }
+
+    // Returns the integer value of the second argument for an Arithmetic command
+    pub fn arg2Arithmetic(self: *Parser) i32 {
+        if (self.current_command == CommandType.arithmetic){
+            // return CodeWriter.pop();
+        }
+        else{
+            print("ERROR: command is not an arithmetic command with 2 arguments.", .{});
+            return undefined;
+        }
+    }
+
+    // Returns the type of push/pop value type
+    pub fn valueType(self: *Parser) []const u8{
+        if (self.current_command == CommandType.push or self.current_command == CommandType.pop){
+            // no error check here to see if ther is in fact a type-- need to do that on Codewriter side
+            return self.lines[self.current_index][1];
+        }
+        else {
+            print("ERROR: command is not a push/pop.", .{});
+            return undefined;
+        }
+    }
+
+    // Returns the integer for a push/pop
+    pub fn argPushPop(self: *Parser) !i32{
+        if (self.current_command == CommandType.push or self.current_command == CommandType.pop){
+            const input: []const u8 = self.lines[self.current_index][2];
+            const parsed_value = try std.fmt.parseInt(i32, input, 10);
+            return parsed_value;
+        }
+        else {
+            print("ERROR: command is not a push/pop.", .{});
+            return undefined;
+        }
+    }
 };
 
 test "Parser.newParser"{
@@ -145,3 +236,58 @@ test "Parser.newParser"{
     try testing.expectEqualStrings("label", parser.lines[3][0]);
     try testing.expectEqualStrings("LOOP_START", parser.lines[3][1]);
 }
+
+test "Parser functionality: hasMoreCommands, advance, commandType, arg1Arithmetic, arg2Arithmetic, valueType, argPushPop" {
+    const testing = std.testing;
+
+    var tmp_dir = testing.tmpDir(.{});
+    defer tmp_dir.cleanup();
+
+    const file_name = "test_input.vm";
+    const file_path = try tmp_dir.dir.createFile(file_name, .{});
+    defer file_path.close();
+
+    const input_text =
+        \\push constant 7
+        \\add
+        \\pop local 2
+        \\neg
+    ;
+
+    try file_path.writer().writeAll(input_text);
+
+    const file = try std.fs.Dir.openFile(tmp_dir.dir, file_name, .{});
+    defer file.close();
+    var parser = try Parser.newParser(file);
+
+    // hasMoreCommands should be true initially
+    try testing.expect(parser.hasMoreCommands());
+
+    // advance to the first command: push constant 7
+    parser.advance();
+    try testing.expectEqual(@as(CommandType, .push), parser.current_command);
+    //print("\n{s}\n", .{parser.valueType()});
+    try testing.expectEqualStrings("constant", parser.valueType());
+    try testing.expectEqual(7, parser.argPushPop());
+
+    // advance to second command: add
+    parser.advance();
+    try testing.expectEqual(@as(CommandType, .arithmetic), parser.current_command);
+    // Assuming it's fixed for testability:
+    // try testing.expectEqualStrings("add", parser.arg1Arithmetic());
+
+    // advance to third command: pop local 2
+    parser.advance();
+    try testing.expectEqual(@as(CommandType, .pop), parser.current_command);
+    try testing.expectEqualStrings("local", parser.valueType());
+    try testing.expectEqual(2, parser.argPushPop());
+
+    // advance to fourth command: neg
+    parser.advance();
+    try testing.expectEqual(@as(CommandType, .arithmeticUnary), parser.current_command);
+
+    // advance to end
+    parser.advance();
+    try testing.expect(!parser.hasMoreCommands());
+}
+
