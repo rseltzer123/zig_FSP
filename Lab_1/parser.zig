@@ -21,8 +21,9 @@ pub const Command = struct {
     arg2: ?i32,      // For push/pop, holds the index; null for arithmetic commands
 };
 
+
 pub const Parser = struct {
-    lines: [100][3] []const u8, // Split lines of the input file (after trimming comments and whitespace)
+    lines: []const [3][]const u8, // dynamically sized array of 3-element arrays
     current_index: usize,
     current_command: ?Command, // Will be set when advance() is called
 
@@ -32,9 +33,10 @@ pub const Parser = struct {
         var reader = std.io.bufferedReader(file.reader());
         var stream = reader.reader();
 
-        var lines: [100][3] []const u8 = undefined;
+        // var lines: [100][3] []const u8 = undefined;
+        var lines_list = std.ArrayList([3][]const u8).init(allocator);
 
-        var i: usize = 0;
+        // var i: usize = 0;
         while (true){
             const line = stream.readUntilDelimiterOrEofAlloc(allocator, '\n', 1024) catch |err|{
                 print("ERROR: {}\n", .{err});
@@ -53,29 +55,49 @@ pub const Parser = struct {
 
             // Split into words
             var it = std.mem.tokenizeAny(u8, line_no_comment, " \n");
+            var row: [3][]const u8 = undefined;
             var j: usize = 0;
             while (it.next()) |word|{
+
+                if (j == 3){
+                    print("ERROR: One of the lines in the VM file was too long.", .{});
+                    break;
+                }
                 // the splitter always returns null at the end
                 print("{s} ", .{word});
                 const word_copy = try allocator.alloc(u8, word.len);
                 @memcpy(word_copy, word);
-                lines[i][j] = word_copy;
+                row[j] = word_copy;
                 j +=1;
 
             }
-            i +=1;
+            // Fill remaining unused slots with empty slices
+            while (j < 3) : (j += 1) {
+                row[j] = "";
+            }
+
+            try lines_list.append(row);
+            //i +=1;
             print("\n", .{});
         }
 
         return Parser{
-            .lines = lines,
+            .lines = try lines_list.toOwnedSlice(),
             .current_index = 0,
             .current_command = null,
         };
     }
+
+    pub fn hasMoreCommands() bool{
+        // checks cuurent command and returns false if current command is the last command
+        return true;
+    }
+
+
+
 };
 
-test "Parser.newParser splits lines and words correctly"{
+test "Parser.newParser"{
     const testing = std.testing;
 
     var tmp_dir = testing.tmpDir(.{});
@@ -109,7 +131,7 @@ test "Parser.newParser splits lines and words correctly"{
     //   ["label", "LOOP_START"]
     // ]
 
-    try testing.expectEqual(@as(usize, 100), parser.lines.len);
+    try testing.expectEqual(@as(usize, 4), parser.lines.len);
     try testing.expectEqualStrings("push", parser.lines[0][0]);
     try testing.expectEqualStrings("constant", parser.lines[0][1]);
     try testing.expectEqualStrings("10", parser.lines[0][2]);
