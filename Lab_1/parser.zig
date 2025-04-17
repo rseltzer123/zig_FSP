@@ -1,6 +1,27 @@
-// Parser class
-// goes through VM file
-// isolating the commands and passing them to CodeWriter to Code into Hack
+// This module provides functionality for parsing VM commands from a file. It includes a parser that reads a
+// VM file, processes it line by line, and classifies each command into one of the predefined command types.
+//
+// The `Parser` structure holds the source lines, the current command index, and the current command in a parsed format.
+// The parser can process VM commands such as arithmetic operations, push/pop commands, and unary operations.
+//
+// Key Functions:
+// - `newParser`: Initializes a parser by reading a VM file, removing comments and whitespace, and splitting the file into lines.
+// - `hasMoreCommands`: Checks if there are more commands to process.
+// - `advance`: Advances to the next command and parses it.
+// - `commandType`: Identifies the type of a given command string (e.g., "add", "sub", "push", "pop").
+// - `arg1Arithmetic`, `arg2Arithmetic`: Retrieves the arguments for arithmetic commands.
+// - `valueType`: Returns the type of value for push/pop commands.
+// - `argPushPop`: Returns the argument value for push/pop commands.
+//
+// `CommandType` is an enum representing the different types of commands in the VM language:
+// - Arithmetic commands: `add`, `sub`, `eq`, `gt`, `lt`, `and`, `or`, `neg`, `not`.
+// - Push/Pop commands: `push`, `pop`.
+// - Placeholder commands for future implementation: `start`, `eof`, `placeholder`.
+//
+// The module uses an array of strings to represent each line in the VM file, and it utilizes the `std` library for
+// memory management, string manipulation, and file I/O.
+
+
 
 const std = @import("std");
 const print = std.debug.print;

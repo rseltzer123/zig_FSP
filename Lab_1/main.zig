@@ -5,17 +5,10 @@
 
 
 const std = @import("std");
-const parserFile = @import("parser.zig");
+const parserModule = @import("parser.zig");
 const DIR_FILE_TYPE = std.fs.File.Kind.file;
 
 const print = std.debug.print;
-
-
-pub const CodeWriter = struct {
-    output: []u8,         // or a file handle if writing directly
-    file_name: []const u8,  // For naming static variables: "FileName.i"
-    label_counter: usize, // To generate unique labels in comparisons
-};
 
 // code from Lab 0 to get the output file name
 fn getOutputFileName(path: []const u8, allocator: std.mem.Allocator) ![]const u8 {
@@ -29,7 +22,7 @@ pub fn main() !void {
 
     // Directory input from user taken from Lab 0
     const stdin = std.io.getStdIn().reader();
-    var parser: parserFile.Parser = undefined;
+    var parser: parserModule.Parser = undefined;
     var buffer : [256]u8 = undefined;
     print("Please write a valid file path: \n", .{});
     var isGoodPath = false;
@@ -60,7 +53,7 @@ pub fn main() !void {
                 if (entry.kind == DIR_FILE_TYPE and std.mem.endsWith(u8,  entry.name, ".vm")){
                     const file = try std.fs.Dir.openFile(dir, entry.name, .{});
                     defer file.close();
-                    parser = parserFile.Parser.newParser(file);
+                    parser = parserModule.Parser.newParser(file);
 
                 }
             }
