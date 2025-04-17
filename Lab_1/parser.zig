@@ -11,18 +11,33 @@ pub fn trimComments(line: []const u8) []const u8{
 }
 pub const CommandType = enum {
     start,  //placeholder for starting the program
-    arithmetic, // e.g. add, sub, eq, gt, lt, and, or
-    arithmeticUnary, // neg, not
-    push,       // push segment i
-    pop,        // pop segment i
     eof,        // eof
     placeholder,        //placeholder for all the commands that will be implemented later
+                        //
+    // Arithmetic Commands
+    add,
+    sub,
+    eq,
+    gt,
+    lt,
+    andCommand,
+    orCommand,
+
+    // Arithmetic Unary commands
+    neg,
+    not,
+
+    // Push/Pop
+    push,       // push segment i
+    pop,        // pop segment i
+
+    // To Implement later
     // label,
     // goto,
     // ifGoto,
     // function,
     // call,
-    // returnType,
+    // returnCommand,
 };
 
 // The Parser structure holds the source lines, the current command index, and the current command in a parsed format.
@@ -118,18 +133,18 @@ pub const Parser = struct {
         // Had to do this with a bunch of ifs because you can't switch on strings in zig
 
         // Arithmetic Commands
-        if (std.mem.eql(u8, command, "add")){ return CommandType.arithmetic;}
-        if (std.mem.eql(u8, command, "sub")){ return CommandType.arithmetic;}
+        if (std.mem.eql(u8, command, "add")){ return CommandType.add;}
+        if (std.mem.eql(u8, command, "sub")){ return CommandType.sub;}
 
-        if (std.mem.eql(u8, command, "eq")){ return CommandType.arithmetic;}
-        if (std.mem.eql(u8, command, "gt")){ return CommandType.arithmetic;}
-        if (std.mem.eql(u8, command, "lt")){ return CommandType.arithmetic;}
-        if (std.mem.eql(u8, command, "and")){ return CommandType.arithmetic;}
-        if (std.mem.eql(u8, command, "or")){ return CommandType.arithmetic;}
+        if (std.mem.eql(u8, command, "eq")){ return CommandType.eq;}
+        if (std.mem.eql(u8, command, "gt")){ return CommandType.gt;}
+        if (std.mem.eql(u8, command, "lt")){ return CommandType.lt;}
+        if (std.mem.eql(u8, command, "and")){ return CommandType.andCommand;}
+        if (std.mem.eql(u8, command, "or")){ return CommandType.orCommand;}
 
         // Arithmetic Unary Commands
-        if (std.mem.eql(u8, command, "not")){ return CommandType.arithmeticUnary;}
-        if (std.mem.eql(u8, command, "neg")){ return CommandType.arithmeticUnary;}
+        if (std.mem.eql(u8, command, "not")){ return CommandType.not;}
+        if (std.mem.eql(u8, command, "neg")){ return CommandType.neg;}
 
         // Push
         if (std.mem.eql(u8, command, "push")){ return CommandType.push;}
@@ -142,23 +157,29 @@ pub const Parser = struct {
 
     // Returns the first argument of an arithmetic current command.
     pub fn arg1Arithmetic(self: *Parser) i32{
-        if (self.current_command == CommandType.arithmetic or self.current_command == CommandType.arithmeticUnary){
-            //return CodeWriter.pop();
-        }
-        else{
-            print("ERROR: command is not an arithmetic command.", .{});
-            return undefined;
+        // checks if the current command is an arithmetic command
+        switch (self.current_command) {
+            .add, .sub, .eq, .gt, .lt, .andCommand, .orCommand, .not, .neg => {
+                // return CodeWriter.pop();
+            },
+            else => {
+                print("ERROR: command is not an arithmetic command.", .{});
+                return undefined;
+            }
         }
     }
 
     // Returns the integer value of the second argument for an Arithmetic command
     pub fn arg2Arithmetic(self: *Parser) i32 {
-        if (self.current_command == CommandType.arithmetic){
-            // return CodeWriter.pop();
-        }
-        else{
-            print("ERROR: command is not an arithmetic command with 2 arguments.", .{});
-            return undefined;
+        // checks if the current command is an arithmetic command
+        switch (self.current_command) {
+            .add, .sub, .eq, .gt, .lt, .andCommand, .orCommand => {
+                // return CodeWriter.pop();
+            },
+            else => {
+                print("ERROR: command is not an arithmetic command with 2 arguments.", .{});
+                return undefined;
+            }
         }
     }
 
@@ -272,7 +293,7 @@ test "Parser functionality: hasMoreCommands, advance, commandType, arg1Arithmeti
 
     // advance to second command: add
     parser.advance();
-    try testing.expectEqual(@as(CommandType, .arithmetic), parser.current_command);
+    try testing.expectEqual(@as(CommandType, .add), parser.current_command);
     // Assuming it's fixed for testability:
     // try testing.expectEqualStrings("add", parser.arg1Arithmetic());
 
@@ -284,7 +305,7 @@ test "Parser functionality: hasMoreCommands, advance, commandType, arg1Arithmeti
 
     // advance to fourth command: neg
     parser.advance();
-    try testing.expectEqual(@as(CommandType, .arithmeticUnary), parser.current_command);
+    try testing.expectEqual(@as(CommandType, .neg), parser.current_command);
 
     // advance to end
     parser.advance();

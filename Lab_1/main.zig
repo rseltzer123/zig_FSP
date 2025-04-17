@@ -76,18 +76,40 @@ pub fn main() !void {
 
         //put proper instructions in each one, just not sure how we're implememtning codewriter
         switch (cmdType) {
-            .arithmetic => {
+            // Arithmetic Commands
+            .add => {
                 return 0;
             },
-
-            .arithmeticUnary => {
+            .sub => {
                 return 0;
             },
-
+            .eq => {
+                return 0;
+            },
+            .gt => {
+                return 0;
+            },
+            .lt => {
+                return 0;
+            },
+            .andCommand => {
+                return 0;
+            },
+            .orCommand => {
+                return 0;
+            },
+            // Arithmetic Unary Commands
+            .not => {
+                return 0;
+            },
+            .neg => {
+                return 0;
+            },
+            // Push
             .push => {
                 return 0;
             },
-
+            // Pop
             .pop => {
                 return 0;
             },
