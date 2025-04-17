@@ -176,33 +176,46 @@ pub const Parser = struct {
         return CommandType.placeholder;
     }
 
-    // Returns the first argument of an arithmetic current command.
-    pub fn arg1Arithmetic(self: *Parser) i32{
-        // checks if the current command is an arithmetic command
-        switch (self.current_command) {
-            .add, .sub, .eq, .gt, .lt, .andCommand, .orCommand, .not, .neg => {
-                // return CodeWriter.pop();
-            },
-            else => {
-                print("ERROR: command is not an arithmetic command.", .{});
-                return undefined;
-            }
-        }
-    }
-
-    // Returns the integer value of the second argument for an Arithmetic command
-    pub fn arg2Arithmetic(self: *Parser) i32 {
-        // checks if the current command is an arithmetic command
-        switch (self.current_command) {
-            .add, .sub, .eq, .gt, .lt, .andCommand, .orCommand => {
-                // return CodeWriter.pop();
-            },
-            else => {
-                print("ERROR: command is not an arithmetic command with 2 arguments.", .{});
-                return undefined;
-            }
-        }
-    }
+    // I DONT THINK WE NEED THESE FUNCTIONS
+    // // Returns the first argument of an arithmetic current command.
+    // pub fn arg1Arithmetic(self: *Parser) i32{
+    //     // checks if the current command is an arithmetic command
+    //     switch (self.current_command) {
+    //         .add, .sub, .eq, .gt, .lt, .andCommand, .orCommand, .not, .neg => {
+    //             // return CodeWriter.pop();
+    //         },
+    //         else => {
+    //             print("ERROR: command is not an arithmetic command.", .{});
+    //             return undefined;
+    //         }
+    //     }
+    // }
+    //
+    // // Returns the integer value of the second argument for an Arithmetic command
+    // pub fn arg2Arithmetic(self: *Parser) i32 {
+    //     // checks if the current command is an arithmetic command
+    //     switch (self.current_command) {
+    //         .add, .sub, .eq, .gt, .lt, .andCommand, .orCommand => {
+    //             // return CodeWriter.pop();
+    //         },
+    //         else => {
+    //             print("ERROR: command is not an arithmetic command with 2 arguments.", .{});
+    //             return undefined;
+    //         }
+    //     }
+    // }
+    // // Returns the integer for a push/pop
+    //     pub fn argPushPop(self: *Parser) !i32{
+    //         if (self.current_command == CommandType.push or self.current_command == CommandType.pop){
+    //             const input: []const u8 = self.lines[self.current_index][2];
+    //             const parsed_value = try std.fmt.parseInt(i32, input, 10);
+    //             return parsed_value;
+    //         }
+    //         else {
+    //             print("ERROR: command is not a push/pop.", .{});
+    //             return undefined;
+    //         }
+    //     }
 
     // Returns the type of push/pop value type
     pub fn valueType(self: *Parser) []const u8{
@@ -216,18 +229,7 @@ pub const Parser = struct {
         }
     }
 
-    // Returns the integer for a push/pop
-    pub fn argPushPop(self: *Parser) !i32{
-        if (self.current_command == CommandType.push or self.current_command == CommandType.pop){
-            const input: []const u8 = self.lines[self.current_index][2];
-            const parsed_value = try std.fmt.parseInt(i32, input, 10);
-            return parsed_value;
-        }
-        else {
-            print("ERROR: command is not a push/pop.", .{});
-            return undefined;
-        }
-    }
+
 };
 
 test "Parser.newParser"{
