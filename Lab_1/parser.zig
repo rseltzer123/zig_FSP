@@ -204,24 +204,25 @@ pub const Parser = struct {
     //         }
     //     }
     // }
-    // // Returns the integer for a push/pop
-    //     pub fn argPushPop(self: *Parser) !i32{
-    //         if (self.current_command == CommandType.push or self.current_command == CommandType.pop){
-    //             const input: []const u8 = self.lines[self.current_index][2];
-    //             const parsed_value = try std.fmt.parseInt(i32, input, 10);
-    //             return parsed_value;
-    //         }
-    //         else {
-    //             print("ERROR: command is not a push/pop.", .{});
-    //             return undefined;
-    //         }
-    //     }
 
     // Returns the type of push/pop value type
     pub fn valueType(self: *Parser) []const u8{
         if (self.current_command == CommandType.push or self.current_command == CommandType.pop){
             // no error check here to see if ther is in fact a type-- need to do that on Codewriter side
             return self.lines[self.current_index][1];
+        }
+        else {
+            print("ERROR: command is not a push/pop.", .{});
+            return undefined;
+        }
+    }
+
+    // Returns the integer for a push/pop
+         pub fn argPushPop(self: *Parser) !i32{
+        if (self.current_command == CommandType.push or self.current_command == CommandType.pop){
+            const input: []const u8 = self.lines[self.current_index][2];
+            const parsed_value = try std.fmt.parseInt(i32, input, 10);
+            return parsed_value;
         }
         else {
             print("ERROR: command is not a push/pop.", .{});
