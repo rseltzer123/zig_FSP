@@ -2,7 +2,7 @@
 /// Efrem Mincer: 3246291982
 /// Fundamentals of Software Programming Lab 1
 
-
+//TODO: 1.Test the main loop and fix any erros 2. add error handling
 
 const std = @import("std");
 const parserModule = @import("parser.zig");
