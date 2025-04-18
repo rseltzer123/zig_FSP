@@ -6,12 +6,13 @@
 
 const std = @import("std");
 const parserModule = @import("parser.zig");
+const codeWriterModule = @import("codeWriter.zig");
 const DIR_FILE_TYPE = std.fs.File.Kind.file;
 
 const print = std.debug.print;
 
 // code from Lab 0 to get the output file name
-fn getOutputFileName(path: []const u8, allocator: std.mem.Allocator) ![]const u8 {
+fn getInputFileName(path: []const u8, allocator: std.mem.Allocator) ![]const u8 {
     const res = std.fmt.allocPrint(allocator, "{s}.asm", .{std.fs.path.basename(path)}) catch | err | {
         return err;
     };
@@ -23,7 +24,10 @@ pub fn main() !void {
     // Directory input from user taken from Lab 0
     const stdin = std.io.getStdIn().reader();
     var parser: parserModule.Parser = undefined;
+
+    const fileName = undefined;
     var buffer : [256]u8 = undefined;
+
     print("Please write a valid file path: \n", .{});
     var isGoodPath = false;
     while (!isGoodPath) {
@@ -41,7 +45,8 @@ pub fn main() !void {
 
             isGoodPath = true;
 
-            const fileName = try getOutputFileName(path_val, std.heap.page_allocator);
+            fileName = try getInputFileName(path_val, std.heap.page_allocator);
+            // add error handling
 
             const wFile = try dir.createFile(fileName, .{.read = false});
             defer wFile.close();
@@ -62,49 +67,60 @@ pub fn main() !void {
         }
     }
 
+    const outputFileName = fileName[0..fileName.len-3] ++ ".asm";
+    const outputFile = try std.fs.cwd().createFile(outputFileName, .{ .truncate = true });
+    defer outputFile.close();
+
     while (parser.hasMoreCommands()){
         // first advance and if it's at the start it'll read the first command and doesn't increment the counter (although we could change that)
         parser.advance();
         const cmdType = parser.current_command;
 
+        var writer = codeWriterModule.CodeWriter.newCodeWriter(fileName);
+
+
+        const allocator = std.heap.page_allocator;
+
+        const newLines: []const u8 = undefined;
+
         //put proper instructions in each one, just not sure how we're implememtning codewriter
         switch (cmdType) {
             // Arithmetic Commands
             .add => {
-                return 0;
+                newLines = writer.writeAdd();
             },
             .sub => {
-                return 0;
+                newLines = writer.writeSub();
             },
             .eq => {
-                return 0;
+                newLines = writer.writeEq(allocator) catch @panic("writeEq failed");
             },
             .gt => {
-                return 0;
+                newLines = writer.writeGt(allocator);
             },
             .lt => {
-                return 0;
+                newLines = writer.writeLt(allocator);
             },
             .andCommand => {
-                return 0;
+                newLines = writer.writeAnd();
             },
             .orCommand => {
-                return 0;
+                newLines = writer.writeOr();
             },
             // Arithmetic Unary Commands
             .not => {
-                return 0;
+                newLines = writer.writeNot();
             },
             .neg => {
-                return 0;
+                newLines = writer.writeNeg();
             },
             // Push
             .push => {
-                return 0;
+                newLines = writer.writePush(parser.valueType(), parser.argPushPop(), allocator);
             },
             // Pop
             .pop => {
-                return 0;
+                newLines = writer.writePop(parser.valueType(), parser.argPushPop(), allocator);
             },
 
             else => {
@@ -112,6 +128,10 @@ pub fn main() !void {
             }
 
         }
+
+        outputFile.write(newLines);
+        allocator.free(newLines);
+
     }
 
 }

@@ -5,13 +5,16 @@ const std = @import("std");
 const print = std.debug.print;
 
 pub const CodeWriter = struct {
-    output: []u8,         // or a file handle if writing directly
+    //output: []u8,         // or a file handle if writing directly
     file_name: []const u8,  // For naming static variables: "FileName.i"
     label_counter: usize, // To generate unique labels in comparisons
 
-    pub fn newCodeWriter(fileName: []const u8) CodeWriter{
-        _ = fileName;
-        return CodeWriter;
+    pub fn newCodeWriter(fileName: []const u8) CodeWriter {
+        return CodeWriter{
+            //.output = undefined,
+            .file_name = fileName,
+            .label_counter = 0,
+        };
     }
 
     pub fn writeAdd() []const u8 {
@@ -20,6 +23,7 @@ pub const CodeWriter = struct {
                \\D=M        // D = y (topmost value)
                \\A=A-1
                \\M=M+D      // M = x + y
+               \\
                ;
     }
 
@@ -29,6 +33,7 @@ pub const CodeWriter = struct {
                \\D=M        // D = y
                \\A=A-1
                \\M=M-D      // M = x - y
+               \\
                ;
     }
 
@@ -56,6 +61,7 @@ pub const CodeWriter = struct {
             \\A=M-1
             \\M=-1  // true
             \\(EQ_END{d})
+            \\
             ,
             .{label_id, label_id, label_id, label_id}
         );
@@ -85,6 +91,7 @@ pub const CodeWriter = struct {
             \\A=M-1
             \\M=-1  // true
             \\(GT_END{d})
+            \\
             ,
             .{label_id, label_id, label_id, label_id}
         );
@@ -114,6 +121,7 @@ pub const CodeWriter = struct {
             \\A=M-1
             \\M=-1  // true
             \\(LT_END{d})
+            \\
             ,
             .{label_id, label_id, label_id, label_id}
         );
@@ -125,6 +133,7 @@ pub const CodeWriter = struct {
                \\D=M        // D = y (topmost value)
                \\A=A-1
                \\M=M&D      // M = x bitwise and y
+               \\
                ;
     }
 
@@ -134,6 +143,7 @@ pub const CodeWriter = struct {
                \\D=M        // D = y (topmost value)
                \\A=A-1
                \\M=M|D      // M = x bitwaise or y
+               \\
                ;
     }
 
@@ -141,6 +151,7 @@ pub const CodeWriter = struct {
         return \\@SP
                \\A=M-1
                \\M=!M
+               \\
                ;
     }
 
@@ -148,6 +159,7 @@ pub const CodeWriter = struct {
         return \\@SP
                \\A=M-1
                \\M=-M
+               \\
                ;
     }
 
@@ -164,6 +176,7 @@ pub const CodeWriter = struct {
                  \\M=D
                  \\@SP
                  \\M=M+1
+                 \\
                  ,
                 .{i});
         }
@@ -181,6 +194,7 @@ pub const CodeWriter = struct {
                 \\M=D
                 \\@SP
                 \\M=M+1
+                \\
                  ,
                 .{i});
         }
@@ -199,6 +213,7 @@ pub const CodeWriter = struct {
                 \\M=D
                 \\@SP
                 \\M=M+1
+                \\
                  ,
                 .{i});
         }
@@ -217,6 +232,7 @@ pub const CodeWriter = struct {
                 \\M=D
                 \\@SP
                 \\M=M+1
+                \\
                  ,
                 .{i});
         }
@@ -235,6 +251,7 @@ pub const CodeWriter = struct {
                 \\M=D
                 \\@SP
                 \\M=M+1
+                \\
                  ,
                 .{i});
         }
@@ -250,6 +267,7 @@ pub const CodeWriter = struct {
                        \\M=d
                        \\@SP
                        \\M=M+1
+                \\
                 ,
                     .{});
             }
@@ -263,6 +281,7 @@ pub const CodeWriter = struct {
                        \\M=d
                        \\@SP
                        \\M=M+1
+                \\
                 ,
                     .{});
             }
@@ -287,6 +306,7 @@ pub const CodeWriter = struct {
                 \\M=D
                 \\@SP
                 \\M=M+1
+                \\
                  ,
                 .{i});
         }
@@ -301,6 +321,7 @@ pub const CodeWriter = struct {
                 \\M=D
                 \\@SP
                 \\M=M+1
+                \\
                  ,
                 .{self.file_name,i});
         }
@@ -327,6 +348,7 @@ pub const CodeWriter = struct {
                 \\@R13
                 \\A=M
                 \\M=D
+                \\
                  ,
                 .{i});
         }
@@ -347,6 +369,7 @@ pub const CodeWriter = struct {
                 \\@R13
                 \\A=M
                 \\M=D
+                \\
                  ,
                 .{i});
         }
@@ -367,6 +390,7 @@ pub const CodeWriter = struct {
                 \\@R13
                 \\A=M
                 \\M=D
+                \\
                  ,
                 .{i});
         }
@@ -387,6 +411,7 @@ pub const CodeWriter = struct {
                 \\@R13
                 \\A=M
                 \\M=D
+                \\
                  ,
                 .{i});
         }
@@ -400,6 +425,7 @@ pub const CodeWriter = struct {
                        \\D=M
                        \\@THIS
                        \\M=D
+                \\
                 ,
                     .{});
             }
@@ -411,6 +437,7 @@ pub const CodeWriter = struct {
                        \\D=M
                        \\@THAT
                        \\M=D
+                \\
                 ,
                     .{});
             }
@@ -437,6 +464,7 @@ pub const CodeWriter = struct {
                 \\@R13
                 \\A=M
                 \\M=D
+                \\
                  ,
                 .{i});
         }
@@ -449,6 +477,7 @@ pub const CodeWriter = struct {
                 \\D=M
                 \\@{s}.{d}
                 \\M=D
+                \\
                  ,
                 .{self.file_name,i});
         }
@@ -466,6 +495,7 @@ test "writeAdd" {
         \\D=M        // D = y (topmost value)
         \\A=A-1
         \\M=M+D      // M = x + y
+        \\
         ,
         result
     );
@@ -479,6 +509,7 @@ test "writeSub" {
         \\D=M        // D = y
         \\A=A-1
         \\M=M-D      // M = x - y
+        \\
         ,
         result
     );
@@ -492,6 +523,7 @@ test "writeAnd" {
         \\D=M        // D = y (topmost value)
         \\A=A-1
         \\M=M&D      // M = x bitwise and y
+        \\
         ,
         result
     );
@@ -505,6 +537,7 @@ test "writeOr" {
         \\D=M        // D = y (topmost value)
         \\A=A-1
         \\M=M|D      // M = x bitwaise or y
+        \\
         ,
         result
     );
@@ -516,17 +549,19 @@ test "writeNot" {
         \\@SP
         \\A=M-1
         \\M=!M
+        \\
         ,
         result
     );
 }
 
 test "writeNeg" {
-    const result = CodeWriter.writeNeg();
+    const result: []const u8 = CodeWriter.writeNeg();
     try std.testing.expectEqualStrings(
         \\@SP
         \\A=M-1
         \\M=-M
+        \\
         ,
         result
     );
@@ -535,7 +570,7 @@ test "writeNeg" {
 test "writePush constant 7" {
     const allocator = std.testing.allocator;
     var writer = CodeWriter{
-        .output = undefined,
+        //.output = undefined,
         .file_name = "TestFile",
         .label_counter = 0,
     };
@@ -551,6 +586,7 @@ test "writePush constant 7" {
         \\M=D
         \\@SP
         \\M=M+1
+        \\
         ,
         result
     );
@@ -559,7 +595,7 @@ test "writePush constant 7" {
 test "writePop static 2" {
     const allocator = std.testing.allocator;
     var writer = CodeWriter{
-        .output = undefined,
+        //.output = undefined,
         .file_name = "TestFile",
         .label_counter = 0,
     };
@@ -573,9 +609,18 @@ test "writePop static 2" {
         \\D=M
         \\@TestFile.2
         \\M=D
+        \\
         ,
         result
     );
 }
+
+test "CodeWriter.newCodeWriter initializes fields correctly" {
+    const writer = CodeWriter.newCodeWriter("TestFile");
+
+    try std.testing.expectEqualStrings("TestFile", writer.file_name);
+    try std.testing.expectEqual(@as(usize, 0), writer.label_counter);
+}
+
 
 
