@@ -143,7 +143,8 @@ pub fn main() !void {
             print("ERROR: {}\n", .{err});
             return;
         };
-        print("Bytes written: {d}\n", .{bytesWritten});
+        // DBUGGING: print("Bytes written: {d}\n", .{bytesWritten});
+        _ = bytesWritten;
 
         if (shouldFree){
             allocator.free(newLines);
@@ -151,6 +152,7 @@ pub fn main() !void {
 
     }
 
+    print("\nWrote successfully to file.\n", .{});
     wFile.close();
 
 }
