@@ -17,7 +17,11 @@ pub const CodeWriter = struct {
         };
     }
 
-    // TODO: Must fix sub and probably a few others ( but not push, it is good)
+    // Working:
+    //      add
+    //      sub
+    //      push
+    //
     pub fn writeAdd(self: CodeWriter) []const u8 {
         _ = self;
         return \\// SP--
@@ -43,12 +47,21 @@ pub const CodeWriter = struct {
 
     pub fn writeSub(self: CodeWriter) []const u8 {
         _ = self;
-        return \\@SP
-               \\AM=M-1
-               \\D=M        // D = y
-               \\A=A-1
-               \\M=M-D      // M = x - y
-               \\
+        return \\// pop x into D (top of stack)
+                \\@SP
+                \\AM=M-1
+                \\D=M
+                \\// pop y and compute y - x
+                \\@SP
+                \\AM=M-1
+                \\D=M-D
+                \\// push result (y - x)
+                \\@SP
+                \\A=M
+                \\M=D
+                \\@SP
+                \\M=M+1
+                \\
                ;
     }
 
