@@ -103,7 +103,7 @@ pub const Parser = struct {
                     break;
                 }
                 // the splitter always returns null at the end
-                print("{s} ", .{word});
+                // print("{s} ", .{word});
                 const word_copy = try allocator.alloc(u8, word.len);
                 @memcpy(word_copy, word);
                 row[j] = word_copy;
@@ -116,7 +116,7 @@ pub const Parser = struct {
             }
 
             try lines_list.append(row);
-            print("\n", .{});
+            // print("\n", .{});
         }
 
         return Parser{
@@ -129,6 +129,10 @@ pub const Parser = struct {
     // Returns whether there are additional commands to process.
     pub fn hasMoreCommands(self: *Parser) bool{
         // checks cuurent command and returns false if current command is the last command
+
+        // file has no lines
+        if (self.lines.len == 0){ return false; }
+
         return self.current_index < (self.lines.len - 1);
     }
 

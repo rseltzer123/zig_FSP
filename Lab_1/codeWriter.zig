@@ -17,7 +17,8 @@ pub const CodeWriter = struct {
         };
     }
 
-    pub fn writeAdd() []const u8 {
+    pub fn writeAdd(self: CodeWriter) []const u8 {
+        _ = self;
         return \\@SP
                \\AM=M-1
                \\D=M        // D = y (topmost value)
@@ -27,7 +28,8 @@ pub const CodeWriter = struct {
                ;
     }
 
-    pub fn writeSub() []const u8 {
+    pub fn writeSub(self: CodeWriter) []const u8 {
+        _ = self;
         return \\@SP
                \\AM=M-1
                \\D=M        // D = y
@@ -127,7 +129,8 @@ pub const CodeWriter = struct {
         );
     }
 
-    pub fn writeAnd() []const u8 {
+    pub fn writeAnd(self: CodeWriter) []const u8 {
+        _ = self;
         return \\@SP
                \\AM=M-1
                \\D=M        // D = y (topmost value)
@@ -137,7 +140,8 @@ pub const CodeWriter = struct {
                ;
     }
 
-    pub fn writeOr() []const u8 {
+    pub fn writeOr(self: CodeWriter) []const u8 {
+        _ = self;
         return \\@SP
                \\AM=M-1
                \\D=M        // D = y (topmost value)
@@ -147,7 +151,8 @@ pub const CodeWriter = struct {
                ;
     }
 
-    pub fn writeNot() []const u8 {
+    pub fn writeNot(self: CodeWriter) []const u8 {
+        _ = self;
         return \\@SP
                \\A=M-1
                \\M=!M
@@ -155,7 +160,8 @@ pub const CodeWriter = struct {
                ;
     }
 
-    pub fn writeNeg() []const u8 {
+    pub fn writeNeg(self: CodeWriter) []const u8 {
+        _ = self;
         return \\@SP
                \\A=M-1
                \\M=-M

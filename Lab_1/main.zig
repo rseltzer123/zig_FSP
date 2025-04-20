@@ -2,8 +2,6 @@
 /// Efrem Mincer: 3246291982
 /// Fundamentals of Software Programming Lab 1
 
-//TODO: 1.Test the main loop and fix any erros 2. add error handling
-
 const std = @import("std");
 const parserModule = @import("parser.zig");
 const codeWriterModule = @import("codeWriter.zig");
@@ -11,22 +9,16 @@ const DIR_FILE_TYPE = std.fs.File.Kind.file;
 
 const print = std.debug.print;
 
-// code from Lab 0 to get the output file name
-fn getInputFileName(path: []const u8, allocator: std.mem.Allocator) ![]const u8 {
-    const res = std.fmt.allocPrint(allocator, "{s}.asm", .{std.fs.path.basename(path)}) catch | err | {
-        return err;
-    };
-    return res;
-}
-
 pub fn main() !void {
 
     // Directory input from user taken from Lab 0
     const stdin = std.io.getStdIn().reader();
     var parser: parserModule.Parser = undefined;
+    var parserErrorUnion: anyerror!parserModule.Parser = undefined;
 
-    const fileName = undefined;
+    var outputFileName: []const u8 = undefined;
     var buffer : [256]u8 = undefined;
+    var wFile: std.fs.File = undefined;
 
     print("Please write a valid file path: \n", .{});
     var isGoodPath = false;
@@ -37,19 +29,14 @@ pub fn main() !void {
         if (path) |value| {
             const path_val = std.mem.trim(u8, value, " \r\n");
 
-            var dir = std.fs.cwd().openDir(path_val,  .{.iterate = true}) catch |err| {
+            // enter an absolute path, for example like this: C:\Users\effie\IdeaProjects\zig_FSP\Lab_1
+            var dir = std.fs.openDirAbsolute(path_val,  .{.iterate = true}) catch |err| {
                 print("ERROR: {}\n", .{err});
                 continue;
             };
             defer dir.close();
 
             isGoodPath = true;
-
-            fileName = try getInputFileName(path_val, std.heap.page_allocator);
-            // add error handling
-
-            const wFile = try dir.createFile(fileName, .{.read = false});
-            defer wFile.close();
 
             // iterate over directory and get file names
             var dir_it = dir.iterate();
@@ -58,7 +45,18 @@ pub fn main() !void {
                 if (entry.kind == DIR_FILE_TYPE and std.mem.endsWith(u8,  entry.name, ".vm")){
                     const file = try std.fs.Dir.openFile(dir, entry.name, .{});
                     defer file.close();
-                    parser = parserModule.Parser.newParser(file);
+
+                    parserErrorUnion = parserModule.Parser.newParser(file);
+                    if (parserErrorUnion) |val|{
+                        parser = val;
+                    }
+                    else |err| {
+                        print("Error: {}\n", .{err});
+                        return;
+                    }
+
+                    outputFileName = try std.fmt.allocPrint(std.heap.page_allocator, "{s}.asm", .{entry.name[0..entry.name.len-3]});
+                    wFile = try dir.createFile(outputFileName, .{.read = false, .truncate = true});     //.truncate == if file exists erase it's contents
 
                 }
             }
@@ -67,21 +65,19 @@ pub fn main() !void {
         }
     }
 
-    const outputFileName = fileName[0..fileName.len-3] ++ ".asm";
-    const outputFile = try std.fs.cwd().createFile(outputFileName, .{ .truncate = true });
-    defer outputFile.close();
-
+    // DEBUGGING: print("Parser self.lines.len: {d}\nParser current index: {d}\n", .{parser.lines.len, parser.current_index});
     while (parser.hasMoreCommands()){
         // first advance and if it's at the start it'll read the first command and doesn't increment the counter (although we could change that)
         parser.advance();
         const cmdType = parser.current_command;
 
-        var writer = codeWriterModule.CodeWriter.newCodeWriter(fileName);
+        var writer = codeWriterModule.CodeWriter.newCodeWriter(outputFileName);
 
 
         const allocator = std.heap.page_allocator;
 
-        const newLines: []const u8 = undefined;
+        var newLines: []const u8 = undefined;
+        var shouldFree: bool = false;
 
         //put proper instructions in each one, just not sure how we're implememtning codewriter
         switch (cmdType) {
@@ -92,14 +88,18 @@ pub fn main() !void {
             .sub => {
                 newLines = writer.writeSub();
             },
+            //have to add error handling
             .eq => {
                 newLines = writer.writeEq(allocator) catch @panic("writeEq failed");
+                shouldFree = true;
             },
             .gt => {
-                newLines = writer.writeGt(allocator);
+                newLines = writer.writeGt(allocator) catch @panic("writeGt failed");
+                shouldFree = true;
             },
             .lt => {
-                newLines = writer.writeLt(allocator);
+                newLines = writer.writeLt(allocator) catch @panic("writeLt failed");
+                shouldFree = true;
             },
             .andCommand => {
                 newLines = writer.writeAnd();
@@ -116,11 +116,21 @@ pub fn main() !void {
             },
             // Push
             .push => {
-                newLines = writer.writePush(parser.valueType(), parser.argPushPop(), allocator);
+                const arg = parser.argPushPop() catch |err|{
+                    print("arg failed, error: {}", .{err});
+                    return;
+                };
+                newLines = writer.writePush(parser.valueType(), arg, allocator) catch @panic("writePush failed");
+                shouldFree = true;
             },
             // Pop
             .pop => {
-                newLines = writer.writePop(parser.valueType(), parser.argPushPop(), allocator);
+                const arg = parser.argPushPop() catch |err|{
+                    print("arg failed, error: {}", .{err});
+                    return;
+                };
+                newLines = writer.writePop(parser.valueType(), arg, allocator) catch @panic("writePop failed");
+                shouldFree = true;
             },
 
             else => {
@@ -129,10 +139,19 @@ pub fn main() !void {
 
         }
 
-        outputFile.write(newLines);
-        allocator.free(newLines);
+        const bytesWritten = wFile.write(newLines) catch |err|{
+            print("ERROR: {}\n", .{err});
+            return;
+        };
+        print("Bytes written: {d}\n", .{bytesWritten});
+
+        if (shouldFree){
+            allocator.free(newLines);
+        }
 
     }
+
+    wFile.close();
 
 }
 
