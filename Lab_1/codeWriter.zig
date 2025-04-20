@@ -17,13 +17,26 @@ pub const CodeWriter = struct {
         };
     }
 
+    // TODO: Must fix sub and probably a few others ( but not push, it is good)
     pub fn writeAdd(self: CodeWriter) []const u8 {
         _ = self;
-        return \\@SP
-               \\AM=M-1
-               \\D=M        // D = y (topmost value)
-               \\A=A-1
-               \\M=M+D      // M = x + y
+        return \\// SP--
+                \\// D = *SP
+                \\@SP
+                \\AM=M-1
+                \\D=M
+                \\// SP--
+                \\// D = D + *SP
+                \\@SP
+                \\AM=M-1
+                \\D=D+M
+                \\// *SP = D
+                \\@SP
+                \\A=M
+                \\M=D
+                \\// SP++
+                \\@SP
+                \\M=M+1
                \\
                ;
     }

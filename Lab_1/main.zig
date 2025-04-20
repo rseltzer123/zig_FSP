@@ -58,6 +58,13 @@ pub fn main() !void {
                     outputFileName = try std.fmt.allocPrint(std.heap.page_allocator, "{s}.asm", .{entry.name[0..entry.name.len-3]});
                     wFile = try dir.createFile(outputFileName, .{.read = false, .truncate = true});     //.truncate == if file exists erase it's contents
 
+                    // Initialize the SP to 256 in the new file
+                    const bytesWrittenInit = wFile.write("@256\nD=A\n@SP\nM=D\n") catch |err|{
+                        print("ERROR: {}\n", .{err});
+                        return;
+                    };
+                    // DBUGGING: print("Bytes written: {d}\n", .{bytesWritten});
+                    _ = bytesWrittenInit;
                 }
             }
         } else {
