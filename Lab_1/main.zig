@@ -16,6 +16,7 @@ pub fn main() !void {
     var parser: parserModule.Parser = undefined;
     var parserErrorUnion: anyerror!parserModule.Parser = undefined;
 
+    var inputFileName: []const u8 = undefined;
     var outputFileName: []const u8 = undefined;
     var buffer : [256]u8 = undefined;
     var wFile: std.fs.File = undefined;
@@ -55,31 +56,28 @@ pub fn main() !void {
                         return;
                     }
 
+                    inputFileName = entry.name;
                     outputFileName = try std.fmt.allocPrint(std.heap.page_allocator, "{s}.asm", .{entry.name[0..entry.name.len-3]});
                     wFile = try dir.createFile(outputFileName, .{.read = false, .truncate = true});     //.truncate == if file exists erase it's contents
-
-                    // Initialize the SP to 256 in the new file
-                    const bytesWrittenInit = wFile.write("@256\nD=A\n@SP\nM=D\n") catch |err|{
-                        print("ERROR: {}\n", .{err});
-                        return;
-                    };
-                    // DBUGGING: print("Bytes written: {d}\n", .{bytesWritten});
-                    _ = bytesWrittenInit;
                 }
             }
         } else {
             print("NO INPUT FOUND!\n", .{});
         }
     }
+    var writer = codeWriterModule.CodeWriter.newCodeWriter(outputFileName);
+    const initBytesWritten = wFile.write(writer.init()) catch |err|{
+        print("ERROR while writing initialization: {}\n", .{err});
+        return;
+    };
+    _ = initBytesWritten;
+    var lineNum: usize = 13;
 
     // DEBUGGING: print("Parser self.lines.len: {d}\nParser current index: {d}\n", .{parser.lines.len, parser.current_index});
     while (parser.hasMoreCommands()){
         // first advance and if it's at the start it'll read the first command and doesn't increment the counter (although we could change that)
         parser.advance();
         const cmdType = parser.current_command;
-
-        var writer = codeWriterModule.CodeWriter.newCodeWriter(outputFileName);
-
 
         const allocator = std.heap.page_allocator;
 
@@ -91,35 +89,44 @@ pub fn main() !void {
             // Arithmetic Commands
             .add => {
                 newLines = writer.writeAdd();
+                lineNum += 5;
             },
             .sub => {
                 newLines = writer.writeSub();
+                lineNum += 5;
             },
             //have to add error handling
             .eq => {
-                newLines = writer.writeEq(allocator) catch @panic("writeEq failed");
+                newLines = writer.writeEq(allocator, lineNum) catch @panic("writeEq failed");
                 shouldFree = true;
+                lineNum += 14;
             },
             .gt => {
-                newLines = writer.writeGt(allocator) catch @panic("writeGt failed");
+                newLines = writer.writeGt(allocator, lineNum) catch @panic("writeGt failed");
                 shouldFree = true;
+                lineNum += 14;
             },
             .lt => {
-                newLines = writer.writeLt(allocator) catch @panic("writeLt failed");
+                newLines = writer.writeLt(allocator, lineNum) catch @panic("writeLt failed");
                 shouldFree = true;
+                lineNum += 14;
             },
             .andCommand => {
                 newLines = writer.writeAnd();
+                lineNum += 5;
             },
             .orCommand => {
                 newLines = writer.writeOr();
+                lineNum += 5;
             },
             // Arithmetic Unary Commands
             .not => {
                 newLines = writer.writeNot();
+                lineNum += 3;
             },
             .neg => {
                 newLines = writer.writeNeg();
+                lineNum += 3;
             },
             // Push
             .push => {
@@ -127,7 +134,10 @@ pub fn main() !void {
                     print("arg failed, error: {}", .{err});
                     return;
                 };
-                newLines = writer.writePush(parser.valueType(), arg, allocator) catch @panic("writePush failed");
+                newLines = writer.writePushPop("push",parser.valueType(), arg, allocator, inputFileName) catch @panic("writePush failed");
+                // Count the number of lines
+                const lineCount = std.mem.count(u8, newLines, "\n");
+                lineNum += lineCount;
                 shouldFree = true;
             },
             // Pop
@@ -136,7 +146,10 @@ pub fn main() !void {
                     print("arg failed, error: {}", .{err});
                     return;
                 };
-                newLines = writer.writePop(parser.valueType(), arg, allocator) catch @panic("writePop failed");
+                newLines = writer.writePushPop("pop",parser.valueType(), arg, allocator, inputFileName) catch @panic("writePop failed");
+                // Count the number of lines
+                const lineCount = std.mem.count(u8, newLines, "\n");
+                lineNum += lineCount;
                 shouldFree = true;
             },
 
