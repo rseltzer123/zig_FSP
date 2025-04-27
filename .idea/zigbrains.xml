@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
+  <component name="Direnv" enabled="Disabled" />
   <component name="ZLSSettings">
     <option name="zlsPath" value="C:\zigtools\zls\zls.exe" />
   </component>
@@ -7,4 +8,5 @@
     <option name="explicitPathToStd" value="C:\zigtools\zigup\zig\0.14.0\files\lib\std" />
     <option name="toolchainPath" value="C:\zigtools\zigup" />
   </component>
+  <component name="ZigToolchain" toolchain="c645fa4d-baf0-406f-a00e-89df37b0cd48" />
 </project>

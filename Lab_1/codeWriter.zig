@@ -5,6 +5,7 @@ const std = @import("std");
 const print = std.debug.print;
 const TRUELINE = 8;
 const FALSELINE = 2;
+const OPLINES = 14;
 
 pub const CodeWriter = struct {
     //output: []u8,         // or a file handle if writing directly
@@ -44,7 +45,8 @@ pub const CodeWriter = struct {
     //
     pub fn writeAdd(self: CodeWriter) []const u8 {
         _ = self;
-        return \\@SP
+        return \\// add
+               \\@SP
                \\AM=M-1
                \\D=M
                \\A=A-1
@@ -55,7 +57,8 @@ pub const CodeWriter = struct {
 
     pub fn writeSub(self: CodeWriter) []const u8 {
         _ = self;
-        return \\@SP
+        return \\// sub
+               \\@SP
                \\AM=M-1
                \\D=M
                \\A=A-1
@@ -69,7 +72,7 @@ pub const CodeWriter = struct {
         _ = self;
         return std.fmt.allocPrint(
             allocator,
-            \\JEQ
+            \\//    eq
             \\@{d}
             \\D=A
             \\@R13
@@ -80,12 +83,12 @@ pub const CodeWriter = struct {
             \\A=A-1
             \\D=M-D
             \\@{d}
-            \\JEQ
+            \\D;JEQ
             \\@{d}
             \\0;JMP
             \\
             ,
-            .{lineNum+14, TRUELINE, FALSELINE}
+            .{lineNum+OPLINES, TRUELINE, FALSELINE}
         );
     }
 
@@ -95,7 +98,7 @@ pub const CodeWriter = struct {
 
         return std.fmt.allocPrint(
             allocator,
-            \\JGT
+            \\//   gt
             \\@{d}
             \\D=A
             \\@R13
@@ -106,12 +109,12 @@ pub const CodeWriter = struct {
             \\A=A-1
             \\D=M-D
             \\@{d}
-            \\JGT
+            \\D;JGT
             \\@{d}
             \\0;JMP
             \\
             ,
-            .{lineNum+14, TRUELINE, FALSELINE}
+            .{lineNum+OPLINES, TRUELINE, FALSELINE}
         );
     }
 
@@ -121,7 +124,7 @@ pub const CodeWriter = struct {
 
         return std.fmt.allocPrint(
             allocator,
-            \\JLT
+            \\//    lt
             \\@{d}
             \\D=A
             \\@R13
@@ -132,40 +135,43 @@ pub const CodeWriter = struct {
             \\A=A-1
             \\D=M-D
             \\@{d}
-            \\JLT
+            \\D;JLT
             \\@{d}
             \\0;JMP
             \\
             ,
-            .{lineNum+14, TRUELINE, FALSELINE}
+            .{lineNum+OPLINES, TRUELINE, FALSELINE}
         );
     }
 
     pub fn writeAnd(self: CodeWriter) []const u8 {
         _ = self;
-        return \\@SP
+        return \\// and
+               \\@SP
                \\AM=M-1
                \\D=M        // D = y (topmost value)
                \\A=A-1
-               \\M=M&D      // M = x bitwise and y
+               \\M=D&M      // M = x bitwise and y
                \\
                ;
     }
 
     pub fn writeOr(self: CodeWriter) []const u8 {
         _ = self;
-        return \\@SP
+        return \\// or
+               \\@SP
                \\AM=M-1
                \\D=M        // D = y (topmost value)
                \\A=A-1
-               \\M=M|D      // M = x bitwaise or y
+               \\M=D|M      // M = x bitwaise or y
                \\
                ;
     }
 
     pub fn writeNot(self: CodeWriter) []const u8 {
         _ = self;
-        return \\@SP
+        return \\// not
+               \\@SP
                \\A=M-1
                \\M=!M
                \\
@@ -174,7 +180,8 @@ pub const CodeWriter = struct {
 
     pub fn writeNeg(self: CodeWriter) []const u8 {
         _ = self;
-        return \\@SP
+        return \\// neg
+               \\@SP
                \\A=M-1
                \\M=-M
                \\
@@ -215,6 +222,14 @@ pub const CodeWriter = struct {
         var asmText = std.ArrayList(u8).init(allocator);
         defer asmText.deinit(); // If we return early, cleanup
 
+    // Write the original command as a comment
+    try asmText.writer().writeAll("// ");
+        try asmText.writer().writeAll(pushOrpop);
+        try asmText.writer().writeAll(" ");
+        try asmText.writer().writeAll(valueType);
+        try asmText.writer().writeAll(" ");
+        try asmText.writer().print("{d}\n", .{ i });
+
         if (std.mem.eql(u8, valueType, "constant")) {
             try asmText.writer().print("@{d}\nD=A\n", .{ i });
 
@@ -224,17 +239,17 @@ pub const CodeWriter = struct {
             std.mem.eql(u8, valueType, "that")) {
 
             const segSymbol = if (std.mem.eql(u8, valueType, "local")) "LCL"
-                else if (std.mem.eql(u8, valueType, "argument")) "ARG"
-                    else if (std.mem.eql(u8, valueType, "this")) "THIS"
-                        else if (std.mem.eql(u8, valueType, "that")) "THAT"
-                            else return error.InvalidSegment;
+            else if (std.mem.eql(u8, valueType, "argument")) "ARG"
+                else if (std.mem.eql(u8, valueType, "this")) "THIS"
+                    else if (std.mem.eql(u8, valueType, "that")) "THAT"
+                        else return error.InvalidSegment;
 
             try asmText.writer().print("@{s}\nA=M\n", .{ segSymbol });
 
             if (i == 1) {
                 try asmText.writer().writeAll("A=A+1\n");
             } else if (i != 0) {
-                try asmText.writer().print("D=A\n@{d}\nA=A+D\n", .{ i });
+                try asmText.writer().print("D=A\n@{d}\nA=D+A\n", .{ i });
             }
 
             try asmText.writer().writeAll(segmentEndStack.segmentEnd);
@@ -257,6 +272,7 @@ pub const CodeWriter = struct {
         try asmText.writer().writeAll(segmentEndStack.stack);
         return asmText.toOwnedSlice(); // Transfer ownership of result
     }
+
 };
 
 

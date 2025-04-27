@@ -13,24 +13,29 @@ pub fn main() !void {
 
     // Directory input from user taken from Lab 0
     const stdin = std.io.getStdIn().reader();
+    const stdout = std.io.getStdOut().writer();
     var parser: parserModule.Parser = undefined;
     var parserErrorUnion: anyerror!parserModule.Parser = undefined;
 
     var inputFileName: []const u8 = undefined;
     var outputFileName: []const u8 = undefined;
-    var buffer : [256]u8 = undefined;
     var wFile: std.fs.File = undefined;
 
-    print("Please write a valid file path: \n", .{});
+    try stdout.print("Enter path: ", .{});
+
     var isGoodPath = false;
     while (!isGoodPath) {
-        // get path from the user
-        const path =  try stdin.readUntilDelimiterOrEof(buffer[0..], '\n');
-        // convert path from ?[]u8 to []const u8
+        var buffer: [1024]u8 = undefined; // moved inside the loop, so fresh every time
+
+        const path = stdin.readUntilDelimiterOrEof(buffer[0..], '\r') catch |err| {
+            print("ERROR while reading input: {}\n", .{err});
+            return;
+        };
+
         if (path) |value| {
             const path_val = std.mem.trim(u8, value, " \r\n");
 
-            // enter an absolute path, for example like this: C:\Users\effie\IdeaProjects\zig_FSP\Lab_1
+            //example is C:\Users\effie\IdeaProjects\zig_FSP\Lab_1\testFiles\07\BasicTest
             var dir = std.fs.openDirAbsolute(path_val,  .{.iterate = true}) catch |err| {
                 print("ERROR: {}\n", .{err});
                 continue;
@@ -41,8 +46,8 @@ pub fn main() !void {
 
             // iterate over directory and get file names
             var dir_it = dir.iterate();
-            while(try dir_it.next()) |entry| {
 
+            while(try dir_it.next()) |entry| {
                 if (entry.kind == DIR_FILE_TYPE and std.mem.endsWith(u8,  entry.name, ".vm")){
                     const file = try std.fs.Dir.openFile(dir, entry.name, .{});
                     defer file.close();
@@ -89,44 +94,35 @@ pub fn main() !void {
             // Arithmetic Commands
             .add => {
                 newLines = writer.writeAdd();
-                lineNum += 5;
             },
             .sub => {
                 newLines = writer.writeSub();
-                lineNum += 5;
             },
             //have to add error handling
             .eq => {
                 newLines = writer.writeEq(allocator, lineNum) catch @panic("writeEq failed");
                 shouldFree = true;
-                lineNum += 14;
             },
             .gt => {
                 newLines = writer.writeGt(allocator, lineNum) catch @panic("writeGt failed");
                 shouldFree = true;
-                lineNum += 14;
             },
             .lt => {
                 newLines = writer.writeLt(allocator, lineNum) catch @panic("writeLt failed");
                 shouldFree = true;
-                lineNum += 14;
             },
             .andCommand => {
                 newLines = writer.writeAnd();
-                lineNum += 5;
             },
             .orCommand => {
                 newLines = writer.writeOr();
-                lineNum += 5;
             },
             // Arithmetic Unary Commands
             .not => {
                 newLines = writer.writeNot();
-                lineNum += 3;
             },
             .neg => {
                 newLines = writer.writeNeg();
-                lineNum += 3;
             },
             // Push
             .push => {
@@ -135,9 +131,6 @@ pub fn main() !void {
                     return;
                 };
                 newLines = writer.writePushPop("push",parser.valueType(), arg, allocator, inputFileName) catch @panic("writePush failed");
-                // Count the number of lines
-                const lineCount = std.mem.count(u8, newLines, "\n");
-                lineNum += lineCount;
                 shouldFree = true;
             },
             // Pop
@@ -147,9 +140,6 @@ pub fn main() !void {
                     return;
                 };
                 newLines = writer.writePushPop("pop",parser.valueType(), arg, allocator, inputFileName) catch @panic("writePop failed");
-                // Count the number of lines
-                const lineCount = std.mem.count(u8, newLines, "\n");
-                lineNum += lineCount;
                 shouldFree = true;
             },
 
@@ -163,6 +153,11 @@ pub fn main() !void {
             print("ERROR: {}\n", .{err});
             return;
         };
+
+        // Count the number of lines
+        const lineCount = std.mem.count(u8, newLines, "\n");
+        lineNum += lineCount - 1;  // minus 1 for the comment
+                                   //
         // DBUGGING: print("Bytes written: {d}\n", .{bytesWritten});
         _ = bytesWritten;
 
