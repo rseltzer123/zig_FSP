@@ -1,25 +1,25 @@
 @14
-0;JMP          // jump over the block to line 14 (where real code begins)
+0;JMP          // Jump over helper block to actual program start
 @SP
 A=M-1
-M=0            // set top of stack to false (0)
+M=0            // false value (0) setup
 @R13
 A=M
-0;JMP          // jump to return address
+0;JMP          // return to caller
 @SP
 A=M-1
-M=-1           // set top of stack to true (-1)
+M=-1           // true value (-1) setup
 @R13
 A=M
-0;JMP          // jump to return address
-// push constant 10
+0;JMP          // return to caller
+// push constant10
 @10
 D=A
 @SP
 AM=M+1
 A=A-1
 M=D
-// pop local 0
+// pop local0
 @LCL
 A=M
 D=A
@@ -31,21 +31,21 @@ D=M
 @R13
 A=M
 M=D
-// push constant 21
+// push constant21
 @21
 D=A
 @SP
 AM=M+1
 A=A-1
 M=D
-// push constant 22
+// push constant22
 @22
 D=A
 @SP
 AM=M+1
 A=A-1
 M=D
-// pop argument 2
+// pop argument2
 @ARG
 A=M
 D=A
@@ -60,7 +60,7 @@ D=M
 @R13
 A=M
 M=D
-// pop argument 1
+// pop argument1
 @ARG
 A=M
 A=A+1
@@ -73,14 +73,14 @@ D=M
 @R13
 A=M
 M=D
-// push constant 36
+// push constant36
 @36
 D=A
 @SP
 AM=M+1
 A=A-1
 M=D
-// pop this 6
+// pop this6
 @THIS
 A=M
 D=A
@@ -95,21 +95,21 @@ D=M
 @R13
 A=M
 M=D
-// push constant 42
+// push constant42
 @42
 D=A
 @SP
 AM=M+1
 A=A-1
 M=D
-// push constant 45
+// push constant45
 @45
 D=A
 @SP
 AM=M+1
 A=A-1
 M=D
-// pop that 5
+// pop that5
 @THAT
 A=M
 D=A
@@ -124,7 +124,7 @@ D=M
 @R13
 A=M
 M=D
-// pop that 2
+// pop that2
 @THAT
 A=M
 D=A
@@ -139,14 +139,14 @@ D=M
 @R13
 A=M
 M=D
-// push constant 510
+// push constant510
 @510
 D=A
 @SP
 AM=M+1
 A=A-1
 M=D
-// pop temp 6
+// pop temp6
 @11
 D=A
 @R13
@@ -157,7 +157,7 @@ D=M
 @R13
 A=M
 M=D
-// push local 0
+// push local0
 @LCL
 A=M
 D=M
@@ -165,7 +165,7 @@ D=M
 AM=M+1
 A=A-1
 M=D
-// push that 5
+// push that5
 @THAT
 A=M
 D=A
@@ -182,7 +182,7 @@ AM=M-1
 D=M
 A=A-1
 M=D+M
-// push argument 1
+// push argument1
 @ARG
 A=M
 A=A+1
@@ -197,7 +197,7 @@ AM=M-1
 D=M
 A=A-1
 M=M-D
-// push this 6
+// push this6
 @THIS
 A=M
 D=A
@@ -208,7 +208,7 @@ D=M
 AM=M+1
 A=A-1
 M=D
-// push this 6
+// push this6
 @THIS
 A=M
 D=A
@@ -231,7 +231,7 @@ AM=M-1
 D=M
 A=A-1
 M=M-D
-// push temp 6
+// push temp6
 @11
 D=M
 @SP

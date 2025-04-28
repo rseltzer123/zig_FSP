@@ -1,193 +1,119 @@
-
-
 const std = @import("std");
 
 const print = std.debug.print;
-const TRUELINE = 8;
-const FALSELINE = 2;
-const OPLINES = 14;
 
+/// Constants representing jump destinations and offset values
+const TRUELINE = 8;       // Line number to jump to if a comparison is true
+const FALSELINE = 2;      // Line number to jump to if a comparison is false
+const OPLINES = 14;       // Number of lines offset for handling comparison branching
+
+/// Prewritten Hack Assembly snippets to pop two or one value(s) from the stack
+const TWOFROMSTACK = "@SP\nAM=M-1\nD=M\nA=A-1\n"; // Pop y into D, point to x
+const ONEFROMSTACK = "@SP\nA=M-1\n";              // Point to top of stack (SP-1)
+
+/// Struct responsible for generating Hack Assembly code from VM commands
 pub const CodeWriter = struct {
-    //output: []u8,         // or a file handle if writing directly
-    file_name: []const u8,  // For naming static variables: "FileName.i"
+    file_name: []const u8,  // Used for naming static variables: "FileName.i"
 
+    /// Constructs a new CodeWriter instance
     pub fn newCodeWriter(fileName: []const u8) CodeWriter {
         return CodeWriter{
-            //.output = undefined,
             .file_name = fileName,
         };
     }
 
-    pub fn init(self:CodeWriter) []const u8{
-        _=self;
+    /// Initializes the Assembly code with helper functions for boolean true/false
+    pub fn init(self: CodeWriter) []const u8 {
+        _ = self;
         return \\@14
-               \\0;JMP          // jump over the block to line 14 (where real code begins)
+               \\0;JMP          // Jump over helper block to actual program start
                \\@SP
                \\A=M-1
-               \\M=0            // set top of stack to false (0)
+               \\M=0            // false value (0) setup
                \\@R13
                \\A=M
-               \\0;JMP          // jump to return address
+               \\0;JMP          // return to caller
                \\@SP
                \\A=M-1
-               \\M=-1           // set top of stack to true (-1)
+               \\M=-1           // true value (-1) setup
                \\@R13
                \\A=M
-               \\0;JMP          // jump to return address
+               \\0;JMP          // return to caller
                \\
                ;
     }
 
-    // Working:
-    //      add
-    //      sub
-    //      push
-    //
+    /// Writes Assembly code for addition operation
     pub fn writeAdd(self: CodeWriter) []const u8 {
         _ = self;
-        return \\// add
-               \\@SP
-               \\AM=M-1
-               \\D=M
-               \\A=A-1
-               \\M=D+M
-               \\
-               ;
+        return "// add\n" ++ TWOFROMSTACK ++ "M=D+M\n";
     }
 
+    /// Writes Assembly code for subtraction operation
     pub fn writeSub(self: CodeWriter) []const u8 {
         _ = self;
-        return \\// sub
-               \\@SP
-               \\AM=M-1
-               \\D=M
-               \\A=A-1
-               \\M=M-D
-                \\
-               ;
+        return "// sub\n" ++ TWOFROMSTACK ++ "M=M-D\n";
     }
 
-    // when using a function that has an allocator as an arugment you must free it after use
+    /// Writes Assembly code for equality comparison (==)
+    /// Allocator must be freed after use
     pub fn writeEq(self: *CodeWriter, allocator: std.mem.Allocator, lineNum: usize) ![]u8 {
         _ = self;
         return std.fmt.allocPrint(
             allocator,
-            \\//    eq
-            \\@{d}
-            \\D=A
-            \\@R13
-            \\M=D
-            \\@SP
-            \\AM=M-1
-            \\D=M
-            \\A=A-1
-            \\D=M-D
-            \\@{d}
-            \\D;JEQ
-            \\@{d}
-            \\0;JMP
-            \\
-            ,
-            .{lineNum+OPLINES, TRUELINE, FALSELINE}
+            "// eq\n@{d}\nD=A\n@R13\nM=D\n" ++ TWOFROMSTACK ++ "D=M-D\n@{d}\nD;JEQ\n@{d}\n0;JMP\n",
+            .{ lineNum+OPLINES, TRUELINE, FALSELINE }
         );
     }
 
-    // when using a function that has an allocator as an arugment you must free it after use
+    /// Writes Assembly code for greater-than comparison (>)
+    /// Allocator must be freed after use
     pub fn writeGt(self: *CodeWriter, allocator: std.mem.Allocator, lineNum: usize) ![]u8 {
         _ = self;
-
         return std.fmt.allocPrint(
             allocator,
-            \\//   gt
-            \\@{d}
-            \\D=A
-            \\@R13
-            \\M=D
-            \\@SP
-            \\AM=M-1
-            \\D=M
-            \\A=A-1
-            \\D=M-D
-            \\@{d}
-            \\D;JGT
-            \\@{d}
-            \\0;JMP
-            \\
-            ,
-            .{lineNum+OPLINES, TRUELINE, FALSELINE}
+            "// gt\n@{d}\nD=A\n@R13\nM=D\n" ++ TWOFROMSTACK ++ "D=M-D\n@{d}\nD;JGT\n@{d}\n0;JMP\n",
+            .{ lineNum+OPLINES, TRUELINE, FALSELINE }
         );
     }
 
-    // when using a function that has an allocator as an arugment you must free it after use
+    /// Writes Assembly code for less-than comparison (<)
+    /// Allocator must be freed after use
     pub fn writeLt(self: *CodeWriter, allocator: std.mem.Allocator, lineNum: usize) ![]u8 {
         _ = self;
-
         return std.fmt.allocPrint(
             allocator,
-            \\//    lt
-            \\@{d}
-            \\D=A
-            \\@R13
-            \\M=D
-            \\@SP
-            \\AM=M-1
-            \\D=M
-            \\A=A-1
-            \\D=M-D
-            \\@{d}
-            \\D;JLT
-            \\@{d}
-            \\0;JMP
-            \\
-            ,
-            .{lineNum+OPLINES, TRUELINE, FALSELINE}
+            "// lt\n@{d}\nD=A\n@R13\nM=D\n" ++ TWOFROMSTACK ++ "D=M-D\n@{d}\nD;JLT\n@{d}\n0;JMP\n",
+            .{ lineNum+OPLINES, TRUELINE, FALSELINE }
         );
     }
 
+    /// Writes Assembly code for bitwise AND operation
     pub fn writeAnd(self: CodeWriter) []const u8 {
         _ = self;
-        return \\// and
-               \\@SP
-               \\AM=M-1
-               \\D=M        // D = y (topmost value)
-               \\A=A-1
-               \\M=D&M      // M = x bitwise and y
-               \\
-               ;
+        return "// and\n" ++ TWOFROMSTACK ++ "M=D&M\n";
     }
 
+    /// Writes Assembly code for bitwise OR operation
     pub fn writeOr(self: CodeWriter) []const u8 {
         _ = self;
-        return \\// or
-               \\@SP
-               \\AM=M-1
-               \\D=M        // D = y (topmost value)
-               \\A=A-1
-               \\M=D|M      // M = x bitwaise or y
-               \\
-               ;
+        return "// or\n" ++ TWOFROMSTACK ++ "M=D|M\n";
     }
 
+    /// Writes Assembly code for bitwise NOT operation
     pub fn writeNot(self: CodeWriter) []const u8 {
         _ = self;
-        return \\// not
-               \\@SP
-               \\A=M-1
-               \\M=!M
-               \\
-               ;
+        return "// not\n" ++ ONEFROMSTACK ++ "M=!M\n";
     }
 
+    /// Writes Assembly code for negation operation (-x)
     pub fn writeNeg(self: CodeWriter) []const u8 {
         _ = self;
-        return \\// neg
-               \\@SP
-               \\A=M-1
-               \\M=-M
-               \\
-               ;
+        return "// neg\n" ++ ONEFROMSTACK ++ "M=-M\n";
     }
 
+    /// Writes Assembly code for push and pop operations on various segments
+    /// Allocator must be freed after use
     pub fn writePushPop(
         self: *CodeWriter,
         pushOrpop: []const u8,
@@ -199,8 +125,8 @@ pub const CodeWriter = struct {
         _ = self;
 
         const SegmentEndStack = struct {
-            segmentEnd: []const u8,
-            stack: []const u8,
+            segmentEnd: []const u8, // How to prepare D register for the final stack operation
+            stack: []const u8,       // Stack adjustment after reading/writing
         };
 
         const segmentEndStack: SegmentEndStack = blk: {
@@ -220,16 +146,17 @@ pub const CodeWriter = struct {
         };
 
         var asmText = std.ArrayList(u8).init(allocator);
-        defer asmText.deinit(); // If we return early, cleanup
+        defer asmText.deinit(); // Ensure memory is freed on failure
 
-    // Write the original command as a comment
-    try asmText.writer().writeAll("// ");
+        // Write the original VM command as a comment
+        try asmText.writer().writeAll("// ");
         try asmText.writer().writeAll(pushOrpop);
         try asmText.writer().writeAll(" ");
         try asmText.writer().writeAll(valueType);
         try asmText.writer().writeAll(" ");
         try asmText.writer().print("{d}\n", .{ i });
 
+        // Handle different segment types
         if (std.mem.eql(u8, valueType, "constant")) {
             try asmText.writer().print("@{d}\nD=A\n", .{ i });
 
@@ -270,13 +197,14 @@ pub const CodeWriter = struct {
         }
 
         try asmText.writer().writeAll(segmentEndStack.stack);
-        return asmText.toOwnedSlice(); // Transfer ownership of result
-    }
 
+        return asmText.toOwnedSlice(); // Return result and transfer ownership
+    }
 };
 
 
-    test "writeAdd" {
+
+test "writeAdd" {
     const result = CodeWriter.writeAdd();
     try std.testing.expectEqualStrings(
         \\@SP

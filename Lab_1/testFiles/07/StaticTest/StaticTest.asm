@@ -1,17 +1,17 @@
 @14
-0;JMP          // jump over the block to line 14 (where real code begins)
+0;JMP          // Jump over helper block to actual program start
 @SP
 A=M-1
-M=0            // set top of stack to false (0)
+M=0            // false value (0) setup
 @R13
 A=M
-0;JMP          // jump to return address
+0;JMP          // return to caller
 @SP
 A=M-1
-M=-1           // set top of stack to true (-1)
+M=-1           // true value (-1) setup
 @R13
 A=M
-0;JMP          // jump to return address
+0;JMP          // return to caller
 // push constant 111
 @111
 D=A

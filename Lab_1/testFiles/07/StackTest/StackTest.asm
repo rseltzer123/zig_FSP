@@ -1,32 +1,32 @@
 @14
-0;JMP          // jump over the block to line 14 (where real code begins)
+0;JMP          // Jump over helper block to actual program start
 @SP
 A=M-1
-M=0            // set top of stack to false (0)
+M=0            // false value (0) setup
 @R13
 A=M
-0;JMP          // jump to return address
+0;JMP          // return to caller
 @SP
 A=M-1
-M=-1           // set top of stack to true (-1)
+M=-1           // true value (-1) setup
 @R13
 A=M
-0;JMP          // jump to return address
-// push constant 17
+0;JMP          // return to caller
+// push constant17
 @17
 D=A
 @SP
 AM=M+1
 A=A-1
 M=D
-// push constant 17
+// push constant17
 @17
 D=A
 @SP
 AM=M+1
 A=A-1
 M=D
-//    eq
+// eq
 @39
 D=A
 @R13
@@ -40,21 +40,21 @@ D=M-D
 D;JEQ
 @2
 0;JMP
-// push constant 17
+// push constant17
 @17
 D=A
 @SP
 AM=M+1
 A=A-1
 M=D
-// push constant 16
+// push constant16
 @16
 D=A
 @SP
 AM=M+1
 A=A-1
 M=D
-//    eq
+// eq
 @64
 D=A
 @R13
@@ -68,21 +68,21 @@ D=M-D
 D;JEQ
 @2
 0;JMP
-// push constant 16
+// push constant16
 @16
 D=A
 @SP
 AM=M+1
 A=A-1
 M=D
-// push constant 17
+// push constant17
 @17
 D=A
 @SP
 AM=M+1
 A=A-1
 M=D
-//    eq
+// eq
 @89
 D=A
 @R13
@@ -96,21 +96,21 @@ D=M-D
 D;JEQ
 @2
 0;JMP
-// push constant 892
+// push constant892
 @892
 D=A
 @SP
 AM=M+1
 A=A-1
 M=D
-// push constant 891
+// push constant891
 @891
 D=A
 @SP
 AM=M+1
 A=A-1
 M=D
-//    lt
+// lt
 @114
 D=A
 @R13
@@ -124,21 +124,21 @@ D=M-D
 D;JLT
 @2
 0;JMP
-// push constant 891
+// push constant891
 @891
 D=A
 @SP
 AM=M+1
 A=A-1
 M=D
-// push constant 892
+// push constant892
 @892
 D=A
 @SP
 AM=M+1
 A=A-1
 M=D
-//    lt
+// lt
 @139
 D=A
 @R13
@@ -152,21 +152,21 @@ D=M-D
 D;JLT
 @2
 0;JMP
-// push constant 891
+// push constant891
 @891
 D=A
 @SP
 AM=M+1
 A=A-1
 M=D
-// push constant 891
+// push constant891
 @891
 D=A
 @SP
 AM=M+1
 A=A-1
 M=D
-//    lt
+// lt
 @164
 D=A
 @R13
@@ -180,21 +180,21 @@ D=M-D
 D;JLT
 @2
 0;JMP
-// push constant 32767
+// push constant32767
 @32767
 D=A
 @SP
 AM=M+1
 A=A-1
 M=D
-// push constant 32766
+// push constant32766
 @32766
 D=A
 @SP
 AM=M+1
 A=A-1
 M=D
-//   gt
+// gt
 @189
 D=A
 @R13
@@ -208,21 +208,21 @@ D=M-D
 D;JGT
 @2
 0;JMP
-// push constant 32766
+// push constant32766
 @32766
 D=A
 @SP
 AM=M+1
 A=A-1
 M=D
-// push constant 32767
+// push constant32767
 @32767
 D=A
 @SP
 AM=M+1
 A=A-1
 M=D
-//   gt
+// gt
 @214
 D=A
 @R13
@@ -236,21 +236,21 @@ D=M-D
 D;JGT
 @2
 0;JMP
-// push constant 32766
+// push constant32766
 @32766
 D=A
 @SP
 AM=M+1
 A=A-1
 M=D
-// push constant 32766
+// push constant32766
 @32766
 D=A
 @SP
 AM=M+1
 A=A-1
 M=D
-//   gt
+// gt
 @239
 D=A
 @R13
@@ -264,21 +264,21 @@ D=M-D
 D;JGT
 @2
 0;JMP
-// push constant 57
+// push constant57
 @57
 D=A
 @SP
 AM=M+1
 A=A-1
 M=D
-// push constant 31
+// push constant31
 @31
 D=A
 @SP
 AM=M+1
 A=A-1
 M=D
-// push constant 53
+// push constant53
 @53
 D=A
 @SP
@@ -291,7 +291,7 @@ AM=M-1
 D=M
 A=A-1
 M=D+M
-// push constant 112
+// push constant112
 @112
 D=A
 @SP
@@ -311,10 +311,10 @@ M=-M
 // and
 @SP
 AM=M-1
-D=M        // D = y (topmost value)
+D=M
 A=A-1
-M=D&M      // M = x bitwise and y
-// push constant 82
+M=D&M
+// push constant82
 @82
 D=A
 @SP
@@ -324,9 +324,9 @@ M=D
 // or
 @SP
 AM=M-1
-D=M        // D = y (topmost value)
+D=M
 A=A-1
-M=D|M      // M = x bitwaise or y
+M=D|M
 // not
 @SP
 A=M-1
