@@ -60,6 +60,7 @@ pub const Parser = struct {
             if (line == null) break; // End of file
             defer allocator.free(line.?);
 
+            // Trim the line of any whitespace
             const trimmed = std.mem.trim(u8, line.?, " \r\t\n");
 
             // Ignore empty lines or full-line comments

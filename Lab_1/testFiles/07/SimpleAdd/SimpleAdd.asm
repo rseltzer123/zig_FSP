@@ -12,14 +12,14 @@ M=-1           // true value (-1) setup
 @R13
 A=M
 0;JMP          // return to caller
-// push constant7
+// push constant 7
 @7
 D=A
 @SP
 AM=M+1
 A=A-1
 M=D
-// push constant8
+// push constant 8
 @8
 D=A
 @SP

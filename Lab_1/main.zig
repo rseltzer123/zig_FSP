@@ -109,7 +109,7 @@ pub fn main() !void {
         // Arithmetic Binary Operations
             .add => {
             newLines = writer.writeAdd();
-        },
+            },
             .sub => {
                 newLines = writer.writeSub();
             },

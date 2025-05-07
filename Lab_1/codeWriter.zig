@@ -166,10 +166,10 @@ pub const CodeWriter = struct {
             std.mem.eql(u8, valueType, "that")) {
 
             const segSymbol = if (std.mem.eql(u8, valueType, "local")) "LCL"
-            else if (std.mem.eql(u8, valueType, "argument")) "ARG"
-                else if (std.mem.eql(u8, valueType, "this")) "THIS"
-                    else if (std.mem.eql(u8, valueType, "that")) "THAT"
-                        else return error.InvalidSegment;
+                else if (std.mem.eql(u8, valueType, "argument")) "ARG"
+                    else if (std.mem.eql(u8, valueType, "this")) "THIS"
+                        else if (std.mem.eql(u8, valueType, "that")) "THAT"
+                            else return error.InvalidSegment;
 
             try asmText.writer().print("@{s}\nA=M\n", .{ segSymbol });
 

@@ -12,14 +12,14 @@ M=-1           // true value (-1) setup
 @R13
 A=M
 0;JMP          // return to caller
-// push constant10
+// push constant 10
 @10
 D=A
 @SP
 AM=M+1
 A=A-1
 M=D
-// pop local0
+// pop local 0
 @LCL
 A=M
 D=A
@@ -31,21 +31,21 @@ D=M
 @R13
 A=M
 M=D
-// push constant21
+// push constant 21
 @21
 D=A
 @SP
 AM=M+1
 A=A-1
 M=D
-// push constant22
+// push constant 22
 @22
 D=A
 @SP
 AM=M+1
 A=A-1
 M=D
-// pop argument2
+// pop argument 2
 @ARG
 A=M
 D=A
@@ -60,7 +60,7 @@ D=M
 @R13
 A=M
 M=D
-// pop argument1
+// pop argument 1
 @ARG
 A=M
 A=A+1
@@ -73,14 +73,14 @@ D=M
 @R13
 A=M
 M=D
-// push constant36
+// push constant 36
 @36
 D=A
 @SP
 AM=M+1
 A=A-1
 M=D
-// pop this6
+// pop this 6
 @THIS
 A=M
 D=A
@@ -95,21 +95,21 @@ D=M
 @R13
 A=M
 M=D
-// push constant42
+// push constant 42
 @42
 D=A
 @SP
 AM=M+1
 A=A-1
 M=D
-// push constant45
+// push constant 45
 @45
 D=A
 @SP
 AM=M+1
 A=A-1
 M=D
-// pop that5
+// pop that 5
 @THAT
 A=M
 D=A
@@ -124,7 +124,7 @@ D=M
 @R13
 A=M
 M=D
-// pop that2
+// pop that 2
 @THAT
 A=M
 D=A
@@ -139,14 +139,14 @@ D=M
 @R13
 A=M
 M=D
-// push constant510
+// push constant 510
 @510
 D=A
 @SP
 AM=M+1
 A=A-1
 M=D
-// pop temp6
+// pop temp 6
 @11
 D=A
 @R13
@@ -157,7 +157,7 @@ D=M
 @R13
 A=M
 M=D
-// push local0
+// push local 0
 @LCL
 A=M
 D=M
@@ -165,7 +165,7 @@ D=M
 AM=M+1
 A=A-1
 M=D
-// push that5
+// push that 5
 @THAT
 A=M
 D=A
@@ -182,7 +182,7 @@ AM=M-1
 D=M
 A=A-1
 M=D+M
-// push argument1
+// push argument 1
 @ARG
 A=M
 A=A+1
@@ -197,7 +197,7 @@ AM=M-1
 D=M
 A=A-1
 M=M-D
-// push this6
+// push this 6
 @THIS
 A=M
 D=A
@@ -208,7 +208,7 @@ D=M
 AM=M+1
 A=A-1
 M=D
-// push this6
+// push this 6
 @THIS
 A=M
 D=A
@@ -231,7 +231,7 @@ AM=M-1
 D=M
 A=A-1
 M=M-D
-// push temp6
+// push temp 6
 @11
 D=M
 @SP
