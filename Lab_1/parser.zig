@@ -22,6 +22,9 @@ pub const CommandType = enum {
     andCommand,
     orCommand,
 
+    //added for test in class
+    subNum2,
+
     // Arithmetic Unary Commands
     neg,
     not,
@@ -121,20 +124,35 @@ pub const Parser = struct {
     /// Returns the CommandType corresponding to the given command string.
     pub fn commandType(command: []const u8) CommandType {
         // Match command strings manually (no switch for strings in Zig)
-        if (std.mem.eql(u8, command, "add")) return CommandType.add;
-        if (std.mem.eql(u8, command, "sub")) return CommandType.sub;
-        if (std.mem.eql(u8, command, "eq")) return CommandType.eq;
-        if (std.mem.eql(u8, command, "gt")) return CommandType.gt;
-        if (std.mem.eql(u8, command, "lt")) return CommandType.lt;
-        if (std.mem.eql(u8, command, "and")) return CommandType.andCommand;
-        if (std.mem.eql(u8, command, "or")) return CommandType.orCommand;
-        if (std.mem.eql(u8, command, "not")) return CommandType.not;
-        if (std.mem.eql(u8, command, "neg")) return CommandType.neg;
-        if (std.mem.eql(u8, command, "push")) return CommandType.push;
-        if (std.mem.eql(u8, command, "pop")) return CommandType.pop;
-
-        return CommandType.placeholder;
+    if (std.mem.eql(u8, command, "add")) {
+            return CommandType.add;
+        } else if (std.mem.eql(u8, command, "sub")) {
+            return CommandType.sub;
+        } else if (std.mem.eql(u8, command, "eq")) {
+            return CommandType.eq;
+        } else if (std.mem.eql(u8, command, "gt")) {
+            return CommandType.gt;
+        } else if (std.mem.eql(u8, command, "lt")) {
+            return CommandType.lt;
+        } else if (std.mem.eql(u8, command, "and")) {
+            return CommandType.andCommand;
+        } else if (std.mem.eql(u8, command, "or")) {
+            return CommandType.orCommand;
+        } else if (std.mem.eql(u8, command, "not")) {
+            return CommandType.not;
+        } else if (std.mem.eql(u8, command, "neg")) {
+            return CommandType.neg;
+        } else if (std.mem.eql(u8, command, "push")) {
+            return CommandType.push;
+        } else if (std.mem.eql(u8, command, "pop")) {
+            return CommandType.pop;
+        } else if (std.mem.eql(u8, command, "sub#2")) {
+            return CommandType.subNum2;
+        } else {
+            return CommandType.placeholder;
+        }
     }
+
 
     /// Returns the segment type (e.g., "local", "constant") for push/pop commands.
     pub fn valueType(self: *Parser) []const u8 {

@@ -99,7 +99,7 @@ pub fn main() !void {
         parser.advance(); // Advance to the next command
 
         const cmdType = parser.current_command;
-        const allocator = std.heap.page_allocator;
+        const allocator = std.heap.page_allocator;       //move before loop
 
         var newLines: []const u8 = undefined; // Assembly instructions for the current command
         var shouldFree: bool = false;         // Whether we should free the allocated memory later
@@ -108,7 +108,7 @@ pub fn main() !void {
         switch (cmdType) {
         // Arithmetic Binary Operations
             .add => {
-            newLines = writer.writeAdd();
+                newLines = writer.writeAdd();
             },
             .sub => {
                 newLines = writer.writeSub();
@@ -158,6 +158,9 @@ pub fn main() !void {
                 };
                 newLines = writer.writePushPop("pop", parser.valueType(), arg, allocator, inputFileName) catch @panic("writePop failed");
                 shouldFree = true;
+            },
+            .subNum2 => {
+                newLines = writer.writeSubNum2();
             },
 
             else => {

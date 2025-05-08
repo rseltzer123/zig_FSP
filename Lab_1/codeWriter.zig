@@ -200,6 +200,11 @@ pub const CodeWriter = struct {
 
         return asmText.toOwnedSlice(); // Return result and transfer ownership
     }
+
+    pub fn writeSubNum2(self: CodeWriter) []const u8 {
+        _ = self;
+        return "// sub#2\n" ++ TWOFROMSTACK ++ "M=D-M\nM=-M\n";
+    }
 };
 
 

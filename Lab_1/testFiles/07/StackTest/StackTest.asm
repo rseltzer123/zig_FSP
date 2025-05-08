@@ -12,14 +12,14 @@ M=-1           // true value (-1) setup
 @R13
 A=M
 0;JMP          // return to caller
-// push constant17
+// push constant 17
 @17
 D=A
 @SP
 AM=M+1
 A=A-1
 M=D
-// push constant17
+// push constant 17
 @17
 D=A
 @SP
@@ -40,14 +40,14 @@ D=M-D
 D;JEQ
 @2
 0;JMP
-// push constant17
+// push constant 17
 @17
 D=A
 @SP
 AM=M+1
 A=A-1
 M=D
-// push constant16
+// push constant 16
 @16
 D=A
 @SP
@@ -68,14 +68,14 @@ D=M-D
 D;JEQ
 @2
 0;JMP
-// push constant16
+// push constant 16
 @16
 D=A
 @SP
 AM=M+1
 A=A-1
 M=D
-// push constant17
+// push constant 17
 @17
 D=A
 @SP
@@ -96,14 +96,14 @@ D=M-D
 D;JEQ
 @2
 0;JMP
-// push constant892
+// push constant 892
 @892
 D=A
 @SP
 AM=M+1
 A=A-1
 M=D
-// push constant891
+// push constant 891
 @891
 D=A
 @SP
@@ -124,14 +124,14 @@ D=M-D
 D;JLT
 @2
 0;JMP
-// push constant891
+// push constant 891
 @891
 D=A
 @SP
 AM=M+1
 A=A-1
 M=D
-// push constant892
+// push constant 892
 @892
 D=A
 @SP
@@ -152,14 +152,14 @@ D=M-D
 D;JLT
 @2
 0;JMP
-// push constant891
+// push constant 891
 @891
 D=A
 @SP
 AM=M+1
 A=A-1
 M=D
-// push constant891
+// push constant 891
 @891
 D=A
 @SP
@@ -180,14 +180,14 @@ D=M-D
 D;JLT
 @2
 0;JMP
-// push constant32767
+// push constant 32767
 @32767
 D=A
 @SP
 AM=M+1
 A=A-1
 M=D
-// push constant32766
+// push constant 32766
 @32766
 D=A
 @SP
@@ -208,14 +208,14 @@ D=M-D
 D;JGT
 @2
 0;JMP
-// push constant32766
+// push constant 32766
 @32766
 D=A
 @SP
 AM=M+1
 A=A-1
 M=D
-// push constant32767
+// push constant 32767
 @32767
 D=A
 @SP
@@ -236,14 +236,14 @@ D=M-D
 D;JGT
 @2
 0;JMP
-// push constant32766
+// push constant 32766
 @32766
 D=A
 @SP
 AM=M+1
 A=A-1
 M=D
-// push constant32766
+// push constant 32766
 @32766
 D=A
 @SP
@@ -264,21 +264,21 @@ D=M-D
 D;JGT
 @2
 0;JMP
-// push constant57
+// push constant 57
 @57
 D=A
 @SP
 AM=M+1
 A=A-1
 M=D
-// push constant31
+// push constant 31
 @31
 D=A
 @SP
 AM=M+1
 A=A-1
 M=D
-// push constant53
+// push constant 53
 @53
 D=A
 @SP
@@ -291,7 +291,7 @@ AM=M-1
 D=M
 A=A-1
 M=D+M
-// push constant112
+// push constant 112
 @112
 D=A
 @SP
@@ -314,7 +314,7 @@ AM=M-1
 D=M
 A=A-1
 M=D&M
-// push constant82
+// push constant 82
 @82
 D=A
 @SP
