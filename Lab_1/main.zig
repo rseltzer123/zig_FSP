@@ -74,6 +74,7 @@ pub fn findFileAndParse(dir: std.fs.Dir) !struct {file: std.fs.File, parser: par
     return error.NoVMFilesFound;
 }
 
+/// Generates assembly code based on the command type.
 pub fn createNewLines(
     cmdType: parserModule.CommandType,
     writer: *codeWriterModule.CodeWriter,
