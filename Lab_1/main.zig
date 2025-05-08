@@ -37,12 +37,7 @@ pub fn readAndCleanUserInput() ![]const u8 {
 }
 
 /// Scans the given directory for a `.vm` file, parses it, and prepares the output `.asm` file.
-pub fn findFileAndParse(dir: std.fs.Dir) !struct {
-    file: std.fs.File,
-    parser: parserModule.Parser,
-    inputFileName: []const u8,
-    outputFileName: []const u8,
-} {
+pub fn findFileAndParse(dir: std.fs.Dir) !struct {file: std.fs.File, parser: parserModule.Parser, inputFileName: []const u8, outputFileName: []const u8,} {
     var dir_it = dir.iterate();
 
     while (try dir_it.next()) |entry| {
@@ -77,6 +72,77 @@ pub fn findFileAndParse(dir: std.fs.Dir) !struct {
     }
 
     return error.NoVMFilesFound;
+}
+
+pub fn createNewLines(
+    cmdType: parserModule.CommandType,
+    writer: *codeWriterModule.CodeWriter,
+    allocator: std.mem.Allocator,
+    lineNum: usize,
+    parser: *parserModule.Parser,
+    inputFileName: []const u8)
+    ![] const u8 {
+
+    // Determine which code generation function to call based on the command type
+    switch (cmdType) {
+        // Arithmetic Binary Operations
+        .add => {
+            return writer.writeAdd();
+        },
+        .sub => {
+            return writer.writeSub();
+        },
+        .eq => {
+            return writer.writeEq(allocator, lineNum) catch @panic("writeEq failed");
+        },
+        .gt => {
+            return writer.writeGt(allocator, lineNum) catch @panic("writeGt failed");
+        },
+        .lt => {
+            return writer.writeLt(allocator, lineNum) catch @panic("writeLt failed");
+        },
+        .andCommand => {
+            return writer.writeAnd();
+        },
+        .orCommand => {
+            return writer.writeOr();
+        },
+
+        // Arithmetic Unary Operations
+        .not => {
+            return writer.writeNot();
+        },
+        .neg => {
+            return writer.writeNeg();
+        },
+
+        // Push operation
+        .push => {
+            const arg = parser.argPushPop() catch |err|{
+                print("arg failed, error: {}", .{err});
+                return error.WritingPushFailed;
+            };
+            return writer.writePushPop("push", parser.valueType(), arg, allocator, inputFileName) catch @panic("writePush failed");
+        },
+
+        // Pop operation
+        .pop => {
+            const arg = parser.argPushPop() catch |err|{
+                print("arg failed, error: {}", .{err});
+                return error.WritingPopFailed;
+            };
+            return writer.writePushPop("pop", parser.valueType(), arg, allocator, inputFileName) catch @panic("writePop failed");
+        },
+
+        .subNum2 => {
+            return writer.writeSubNum2();
+        },
+
+        else => {
+            print("Unsupported command type encountered.\n", .{});
+            return error.UnsupportedCommand;
+        }
+    }
 }
 
 /// Main entry point for the VM Translator.
@@ -127,80 +193,19 @@ pub fn main() !void {
 
     var lineNum: usize = 13; // Line number used for label generation (especially for comparisons)
 
+    const allocator = std.heap.page_allocator;       //move before loop
+
     // Process each command in the input file
     while (parser.hasMoreCommands()){
         parser.advance(); // Advance to the next command
 
         const cmdType = parser.current_command;
-        const allocator = std.heap.page_allocator;       //move before loop
 
-        var newLines: []const u8 = undefined; // Assembly instructions for the current command
-        var shouldFree: bool = false;         // Whether we should free the allocated memory later
-
-        // Determine which code generation function to call based on the command type
-        switch (cmdType) {
-        // Arithmetic Binary Operations
-            .add => {
-                newLines = writer.writeAdd();
-        },
-            .sub => {
-                newLines = writer.writeSub();
-            },
-            .eq => {
-                newLines = writer.writeEq(allocator, lineNum) catch @panic("writeEq failed");
-                shouldFree = true;
-            },
-            .gt => {
-                newLines = writer.writeGt(allocator, lineNum) catch @panic("writeGt failed");
-                shouldFree = true;
-            },
-            .lt => {
-                newLines = writer.writeLt(allocator, lineNum) catch @panic("writeLt failed");
-                shouldFree = true;
-            },
-            .andCommand => {
-                newLines = writer.writeAnd();
-            },
-            .orCommand => {
-                newLines = writer.writeOr();
-            },
-
-            // Arithmetic Unary Operations
-            .not => {
-                newLines = writer.writeNot();
-            },
-            .neg => {
-                newLines = writer.writeNeg();
-            },
-
-            // Push operation
-            .push => {
-                const arg = parser.argPushPop() catch |err|{
-                    print("arg failed, error: {}", .{err});
-                    return;
-                };
-                newLines = writer.writePushPop("push", parser.valueType(), arg, allocator, inputFileName) catch @panic("writePush failed");
-                shouldFree = true;
-            },
-
-            // Pop operation
-            .pop => {
-                const arg = parser.argPushPop() catch |err|{
-                    print("arg failed, error: {}", .{err});
-                    return;
-                };
-                newLines = writer.writePushPop("pop", parser.valueType(), arg, allocator, inputFileName) catch @panic("writePop failed");
-                shouldFree = true;
-            },
-            .subNum2 => {
-                newLines = writer.writeSubNum2();
-            },
-
-            else => {
-                print("Unsupported command type encountered.\n", .{});
-                return error.UnsupportedCommand;
-            }
-        }
+        // Assembly instructions for the current command
+        const newLines: []const u8 = createNewLines(cmdType,&writer,allocator,lineNum,&parser,inputFileName) catch |err| {
+            print("Error while creating new lines", .{});
+            return err;
+        };
 
         // Write generated assembly code to the output file
         const bytesWritten = wFile.write(newLines) catch |err|{
@@ -214,7 +219,7 @@ pub fn main() !void {
         lineNum += lineCount - 1;  // subtract 1 because one "line" might just be a comment or blank
 
         // Free dynamically allocated memory if needed
-        if (shouldFree){
+        if (cmdType == .eq or cmdType == .gt or cmdType == .lt or cmdType == .eq or cmdType == .push or cmdType == .pop){
             allocator.free(newLines);
         }
     }
