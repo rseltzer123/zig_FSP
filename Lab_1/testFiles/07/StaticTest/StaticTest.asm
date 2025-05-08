@@ -34,7 +34,7 @@ AM=M+1
 A=A-1
 M=D
 // pop static 8
-@StaticTestVME.8
+@StaticTest.8
 D=A
 @R13
 M=D
@@ -45,7 +45,7 @@ D=M
 A=M
 M=D
 // pop static 3
-@StaticTestVME.3
+@StaticTest.3
 D=A
 @R13
 M=D
@@ -56,7 +56,7 @@ D=M
 A=M
 M=D
 // pop static 1
-@StaticTestVME.1
+@StaticTest.1
 D=A
 @R13
 M=D
@@ -67,14 +67,14 @@ D=M
 A=M
 M=D
 // push static 3
-@StaticTestVME.3
+@StaticTest.3
 D=M
 @SP
 AM=M+1
 A=A-1
 M=D
 // push static 1
-@StaticTestVME.1
+@StaticTest.1
 D=M
 @SP
 AM=M+1
@@ -87,7 +87,7 @@ D=M
 A=A-1
 M=M-D
 // push static 8
-@StaticTestVME.8
+@StaticTest.8
 D=M
 @SP
 AM=M+1

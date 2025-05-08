@@ -9,78 +9,111 @@ const DIR_FILE_TYPE = std.fs.File.Kind.file;
 
 const print = std.debug.print;
 
+/// Reads user input and trims it.
+pub fn readAndCleanUserInput() ![]const u8 {
+    const stdin = std.io.getStdIn().reader();
+
+    var buffer: [1024]u8 = undefined; // fresh buffer for each input attempt
+
+    var i: usize = 0;
+
+    while (i < buffer.len) {
+        const byte = stdin.readByte() catch |err| {
+            std.debug.print("ERROR while reading input: {}\n", .{err});
+            return error.InvalidInput;
+        };
+
+        if (byte == '\n' or byte == '\r') {
+            break;
+        }
+
+        buffer[i] = byte;
+        i += 1;
+    }
+
+    const path = buffer[0..i];
+
+    return std.mem.trim(u8, path, " \r\n");
+}
+
+/// Scans the given directory for a `.vm` file, parses it, and prepares the output `.asm` file.
+pub fn findFileAndParse(dir: std.fs.Dir) !struct {
+    file: std.fs.File,
+    parser: parserModule.Parser,
+    inputFileName: []const u8,
+    outputFileName: []const u8,
+} {
+    var dir_it = dir.iterate();
+
+    while (try dir_it.next()) |entry| {
+        if (entry.kind == DIR_FILE_TYPE and std.mem.endsWith(u8, entry.name, ".vm")) {
+            const file = try std.fs.Dir.openFile(dir, entry.name, .{});
+
+            // Create parser
+            const parser = parserModule.Parser.newParser(file) catch |err| {
+                std.debug.print("Error while constructing parser: {}\n", .{err});
+                return error.ErrorConstructingParser;
+            };
+
+            // Input name without `.vm`
+            const inputFileName = try std.heap.page_allocator.dupe(u8, entry.name[0..entry.name.len - 3]);
+
+            // Output file name (e.g., Foo.asm)
+            const outputFileName = try std.fmt.allocPrint(std.heap.page_allocator, "{s}.asm", .{inputFileName});
+
+            // Create the output file
+            const outFile = try dir.createFile(outputFileName, .{ .read = false, .truncate = true });
+
+            // closing the input file as we've gathered all its information
+            file.close();
+
+            return .{
+                .file = outFile,
+                .parser = parser,
+                .inputFileName = inputFileName,
+                .outputFileName = outputFileName,
+            };
+        }
+    }
+
+    return error.NoVMFilesFound;
+}
+
 /// Main entry point for the VM Translator.
 /// Asks the user for a directory path, parses `.vm` files, translates VM commands to Hack assembly,
 /// and writes the output to `.asm` files with the same name as the input files.
 pub fn main() !void {
 
     // Setup input and output streams
-    const stdin = std.io.getStdIn().reader();
     const stdout = std.io.getStdOut().writer();
-
-    var parser: parserModule.Parser = undefined;
-    var parserErrorUnion: anyerror!parserModule.Parser = undefined;
-
-    var inputFileName: []const u8 = undefined;
-    var outputFileName: []const u8 = undefined;
-    var wFile: std.fs.File = undefined;
 
     // Prompt the user for a directory path
     try stdout.print("Enter path: ", .{});
 
-    var isGoodPath = false;
-    while (!isGoodPath) {
-        var buffer: [1024]u8 = undefined; // fresh buffer for each input attempt
+    // Read user input
+    const path_val = readAndCleanUserInput() catch |err|{
+        print("arg failed, error: {}", .{err});
+        return;
+    };
 
-        // Read user input
-        const path = stdin.readUntilDelimiterOrEof(buffer[0..], '\r') catch |err| {
-            print("ERROR while reading input: {}\n", .{err});
-            return;
-        };
+    // Try to open the provided directory
+    var dir = std.fs.openDirAbsolute(path_val,  .{.iterate = true}) catch |err| {
+        print("ERROR: {}\n", .{err});
+        return error.InvalidDirectory;
+    };
+    defer dir.close();
 
-        if (path) |value| {
-            const path_val = std.mem.trim(u8, value, " \r\n");
+    // finds vm file, creates parser and parses the file, creates output file
+    const parsingResult = findFileAndParse(dir) catch |err| {
+        print("ERROR: {}\n", .{err});
+        return;
+    };
 
-            // Try to open the provided directory
-            var dir = std.fs.openDirAbsolute(path_val,  .{.iterate = true}) catch |err| {
-                print("ERROR: {}\n", .{err});
-                continue;
-            };
-            defer dir.close();
-
-            isGoodPath = true;
-
-            // Iterate over the files in the directory
-            var dir_it = dir.iterate();
-
-            while(try dir_it.next()) |entry| {
-                // Only process files that are .vm files
-                if (entry.kind == DIR_FILE_TYPE and std.mem.endsWith(u8,  entry.name, ".vm")){
-                    const file = try std.fs.Dir.openFile(dir, entry.name, .{});
-                    defer file.close();
-
-                    // Attempt to create a parser for the .vm file
-                    parserErrorUnion = parserModule.Parser.newParser(file);
-                    if (parserErrorUnion) |val|{
-                        parser = val;
-                    }
-                    else |err| {
-                        print("Error: {}\n", .{err});
-                        return;
-                    }
-
-                    inputFileName = entry.name;
-                    // Generate the output filename by replacing `.vm` with `.asm`
-                    outputFileName = try std.fmt.allocPrint(std.heap.page_allocator, "{s}.asm", .{entry.name[0..entry.name.len-3]});
-
-                    // Create a new (empty) output file, overwriting if it already exists
-                    wFile = try dir.createFile(outputFileName, .{.read = false, .truncate = true});
-                }
-            }
-        } else {
-            print("NO INPUT FOUND!\n", .{});
-        }
-    }
+    // distributing the tuple of return values to their respective variables
+    var parser = parsingResult.parser;
+    const wFile = parsingResult.file;
+    const inputFileName = parsingResult.inputFileName;
+    const outputFileName = parsingResult.outputFileName;
 
     // Initialize a CodeWriter to generate assembly code
     var writer = codeWriterModule.CodeWriter.newCodeWriter(outputFileName);
@@ -165,6 +198,7 @@ pub fn main() !void {
 
             else => {
                 print("Unsupported command type encountered.\n", .{});
+                return error.UnsupportedCommand;
             }
         }
 
