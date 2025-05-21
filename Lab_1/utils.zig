@@ -5,10 +5,10 @@ const DIR_FILE_TYPE = std.fs.File.Kind.file;
 const print = std.debug.print;
 
 pub fn readAndCleanUserInput() ![]const u8 {
+    const allocator = std.heap.page_allocator;
     const stdin = std.io.getStdIn().reader();
 
-    var buffer: [1024]u8 = undefined; // fresh buffer for each input attempt
-
+    var buffer: [1024]u8 = undefined;
     var i: usize = 0;
 
     while (i < buffer.len) {
@@ -25,10 +25,10 @@ pub fn readAndCleanUserInput() ![]const u8 {
         i += 1;
     }
 
-    const path = buffer[0..i];
-
-    return std.mem.trim(u8, path, " \r\n");
+    const trimmed = std.mem.trim(u8, buffer[0..i], " \r\n");
+    return try allocator.dupe(u8, trimmed); //  makes a heap copy
 }
+
 
 
 pub fn findFilesAndParse(dir: std.fs.Dir, dir_name: []const u8) !struct {
@@ -68,9 +68,9 @@ pub fn findFilesAndParse(dir: std.fs.Dir, dir_name: []const u8) !struct {
     // Create parser from all .vm files
     const parser = try parserModule.Parser.newParser(files.items);
 
+
     outputFileName = try std.fmt.allocPrint(allocator, "{s}.asm", .{baseName});
     outputFile = try dir.createFile(outputFileName, .{ .read = false, .truncate = true });
-
 
     // Close all input files after parsing
     for (files.items) |file| {

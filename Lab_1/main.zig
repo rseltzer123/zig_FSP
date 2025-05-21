@@ -34,7 +34,7 @@ pub fn main() !void {
 
     // Try to open the provided directory
     var dir = std.fs.openDirAbsolute(path_val,  .{.iterate = true}) catch |err| {
-        print("ERROR: {}\n", .{err});
+        print("ERROR opening directory: {}\n", .{err});
         return error.InvalidDirectory;
     };
     defer dir.close();
@@ -45,9 +45,10 @@ pub fn main() !void {
     };
 
 
+
     // finds vm file, creates parser and parses the file, creates output file
     const parsingResult = findFilesAndParse(dir, dir_name) catch |err| {
-        print("ERROR: {}\n", .{err});
+        print("ERROR while parsing files: {}\n", .{err});
         return;
     };
 
@@ -85,7 +86,7 @@ pub fn main() !void {
 
         // Write generated assembly code to the output file
         const bytesWritten = wFile.write(newLines) catch |err|{
-            print("ERROR: {}\n", .{err});
+            print("ERROR while writing to output file: {}\n", .{err});
             return;
         };
         _ = bytesWritten; // Ignore the actual number of bytes written
