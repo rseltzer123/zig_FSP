@@ -24,7 +24,7 @@ pub fn main() !void {
     const stdout = std.io.getStdOut().writer();
 
     // Prompt the user for a directory path
-    try stdout.print("Enter path for multi-file or filename for single file: ", .{});
+    try stdout.print("Enter path for file(s): ", .{});
 
     // Read user input
     const path_val = readAndCleanUserInput() catch |err|{
