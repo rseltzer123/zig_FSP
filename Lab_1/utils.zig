@@ -50,14 +50,14 @@ pub fn findFilesAndParse(dir: std.fs.Dir, dir_name: []const u8) !struct {
         if (entry.kind == .file and std.mem.endsWith(u8, entry.name, ".vm")) {
             const file = try dir.openFile(entry.name, .{});
             try files.append(file);
-        }
-        // can only track name when discovering files
-        if (files.items.len == 1){
-            baseName = try std.heap.page_allocator.dupe(u8, entry.name[0..entry.name.len - 3]);
-        }
-        // reset name to be directory name
-        if (files.items.len == 2){
-            baseName = std.fs.path.basename(dir_name);
+            // can only track name when discovering files
+            if (files.items.len == 1){
+                baseName = try std.heap.page_allocator.dupe(u8, entry.name[0..entry.name.len - 3]);
+                }
+            // reset name to be directory name
+            if (files.items.len == 2){
+                baseName = std.fs.path.basename(dir_name);
+                }
         }
     }
 
