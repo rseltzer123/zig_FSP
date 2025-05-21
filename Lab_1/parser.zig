@@ -48,49 +48,46 @@ pub const Parser = struct {
     current_index: usize,            // Current line index being processed
     current_command: CommandType,    // Type of current command (updated via advance)
 
-    /// Initializes a new Parser by reading a VM file and parsing its contents.
-    pub fn newParser(file: std.fs.File) !Parser {
+    pub fn newParser(files: []std.fs.File) !Parser {
         const allocator = std.heap.page_allocator;
-        var reader = std.io.bufferedReader(file.reader());
-        var stream = reader.reader();
         var lines_list = std.ArrayList([3][]const u8).init(allocator);
 
-        while (true) {
-            const line = stream.readUntilDelimiterOrEofAlloc(allocator, '\n', 1024) catch |err| {
-                print("ERROR: {}\n", .{err});
-                break;
-            };
-            if (line == null) break; // End of file
+        for (files) |file| {
+            var reader = std.io.bufferedReader(file.reader());
+            var stream = reader.reader();
+
+            while (true) {
+                const line = stream.readUntilDelimiterOrEofAlloc(allocator, '\n', 1024) catch |err| {
+                    print("ERROR reading file: {}\n", .{err});
+                    break;
+                };
+                if (line == null) break; // End of file
             defer allocator.free(line.?);
 
-            // Trim the line of any whitespace
-            const trimmed = std.mem.trim(u8, line.?, " \r\t\n");
+                const trimmed = std.mem.trim(u8, line.?, " \r\t\n");
+                if (trimmed.len == 0 or std.mem.startsWith(u8, trimmed, "//")) continue;
 
-            // Ignore empty lines or full-line comments
-            if (trimmed.len == 0 or std.mem.startsWith(u8, trimmed, "//")) continue;
+                const line_no_comment = trimComments(trimmed);
+                var it = std.mem.tokenizeAny(u8, line_no_comment, " \n");
+                var row: [3][]const u8 = undefined;
+                var j: usize = 0;
 
-            // Remove inline comments
-            const line_no_comment = trimComments(trimmed);
-
-            // Tokenize into words
-            var it = std.mem.tokenizeAny(u8, line_no_comment, " \n");
-            var row: [3][]const u8 = undefined;
-            var j: usize = 0;
-            while (it.next()) |word| {
-                if (j == 3) {
-                    print("ERROR: One of the lines in the VM file was too long.", .{});
-                    break;
+                while (it.next()) |word| {
+                    if (j == 3) {
+                        print("ERROR: One of the lines in a VM file was too long.\n", .{});
+                        break;
+                    }
+                    const word_copy = try allocator.alloc(u8, word.len);
+                    @memcpy(word_copy, word);
+                    row[j] = word_copy;
+                    j += 1;
                 }
-                const word_copy = try allocator.alloc(u8, word.len);
-                @memcpy(word_copy, word);
-                row[j] = word_copy;
-                j += 1;
+
+                while (j < 3) : (j += 1) {
+                    row[j] = "";
+                }
+                try lines_list.append(row);
             }
-            // Fill any unused slots with empty strings
-            while (j < 3) : (j += 1) {
-                row[j] = "";
-            }
-            try lines_list.append(row);
         }
 
         return Parser{

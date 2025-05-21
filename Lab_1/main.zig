@@ -11,7 +11,8 @@ const DIR_FILE_TYPE = std.fs.File.Kind.file;
 const print = std.debug.print;
 
 const readAndCleanUserInput = mainUtils.readAndCleanUserInput;
-const findFileAndParse = mainUtils.findFileAndParse;
+const findFilesAndParse = mainUtils.findFilesAndParse;
+const getDirectoryName = mainUtils.getDirectoryName;
 const createNewLines = mainUtils.createNewLines;
 
 /// Main entry point for the VM Translator.
@@ -38,16 +39,22 @@ pub fn main() !void {
     };
     defer dir.close();
 
+    const dir_name = getDirectoryName(path_val, std.heap.page_allocator) catch {
+        std.debug.print("Failed to get directory name\n", .{});
+        return error.NoDirectoryNameReturned;
+    };
+
+
     // finds vm file, creates parser and parses the file, creates output file
-    const parsingResult = findFileAndParse(dir) catch |err| {
+    const parsingResult = findFilesAndParse(dir, dir_name) catch |err| {
         print("ERROR: {}\n", .{err});
         return;
     };
 
     // distributing the tuple of return values to their respective variables
     var parser = parsingResult.parser;
-    const wFile = parsingResult.file;
-    const inputFileName = parsingResult.inputFileName;
+    const baseName = parsingResult.baseName;
+    const wFile = parsingResult.outputFile;
     const outputFileName = parsingResult.outputFileName;
 
     // Initialize a CodeWriter to generate assembly code
@@ -71,7 +78,7 @@ pub fn main() !void {
         const cmdType = parser.current_command;
 
         // Assembly instructions for the current command
-        const newLines: []const u8 = createNewLines(cmdType,&writer,allocator,lineNum,&parser,inputFileName) catch |err| {
+        const newLines: []const u8 = createNewLines(cmdType,&writer,allocator,lineNum,&parser,baseName) catch |err| {
             print("Error while creating new lines", .{});
             return err;
         };

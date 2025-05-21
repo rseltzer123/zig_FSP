@@ -30,52 +30,61 @@ pub fn readAndCleanUserInput() ![]const u8 {
     return std.mem.trim(u8, path, " \r\n");
 }
 
-pub fn multiFileFindAndParse(dir: std.fs.Dir) !struct {file: std.fs.File, parser: parserModule.Parser, inputFileName: []const u8, outputFileName: []const u8,} {
-    _ = dir;
-    return .{
-        // .file = outFile,
-        // .parser = parser,
-        // .inputFileName = inputFileName,
-        // .outputFileName = outputFileName,
-    };
-}
 
-pub fn findFileAndParse(dir: std.fs.Dir) !struct {file: std.fs.File, parser: parserModule.Parser, inputFileName: []const u8, outputFileName: []const u8,} {
+pub fn findFilesAndParse(dir: std.fs.Dir, dir_name: []const u8) !struct {
+    parser: parserModule.Parser,
+    baseName: []const u8,
+    outputFile: std.fs.File,
+    outputFileName: []const u8,
+} {
+    const allocator = std.heap.page_allocator;
     var dir_it = dir.iterate();
+    var files = std.ArrayList(std.fs.File).init(allocator);
+
+    var baseName: []const u8 = "";
+    var outputFileName: []const u8 = "";
+    var outputFile: std.fs.File = undefined;
+
 
     while (try dir_it.next()) |entry| {
-        if (entry.kind == DIR_FILE_TYPE and std.mem.endsWith(u8, entry.name, ".vm")) {
-            const file = try std.fs.Dir.openFile(dir, entry.name, .{});
-
-            // Create parser
-            const parser = parserModule.Parser.newParser(file) catch |err| {
-                std.debug.print("Error while constructing parser: {}\n", .{err});
-                return error.ErrorConstructingParser;
-            };
-
-            // Input name without `.vm`
-            const inputFileName = try std.heap.page_allocator.dupe(u8, entry.name[0..entry.name.len - 3]);
-
-            // Output file name (e.g., Foo.asm)
-            const outputFileName = try std.fmt.allocPrint(std.heap.page_allocator, "{s}.asm", .{inputFileName});
-
-            // Create the output file
-            const outFile = try dir.createFile(outputFileName, .{ .read = false, .truncate = true });
-
-            // closing the input file as we've gathered all its information
-            file.close();
-
-            return .{
-                .file = outFile,
-                .parser = parser,
-                .inputFileName = inputFileName,
-                .outputFileName = outputFileName,
-            };
+        if (entry.kind == .file and std.mem.endsWith(u8, entry.name, ".vm")) {
+            const file = try dir.openFile(entry.name, .{});
+            try files.append(file);
+        }
+        // can only track name when discovering files
+        if (files.items.len == 1){
+            baseName = try std.heap.page_allocator.dupe(u8, entry.name[0..entry.name.len - 3]);
+        }
+        // reset name to be directory name
+        if (files.items.len == 2){
+            baseName = std.fs.path.basename(dir_name);
         }
     }
 
-    return error.NoVMFilesFound;
+    if (files.items.len == 0) {
+        return error.NoVMFilesFound;
+    }
+
+    // Create parser from all .vm files
+    const parser = try parserModule.Parser.newParser(files.items);
+
+    outputFileName = try std.fmt.allocPrint(allocator, "{s}.asm", .{baseName});
+    outputFile = try dir.createFile(outputFileName, .{ .read = false, .truncate = true });
+
+
+    // Close all input files after parsing
+    for (files.items) |file| {
+        file.close();
+    }
+
+    return .{
+        .parser = parser,
+        .outputFile = outputFile,
+        .baseName = baseName,
+        .outputFileName = outputFileName,
+    };
 }
+
 
 /// Generates assembly code based on the command type.
 pub fn createNewLines(
@@ -84,7 +93,7 @@ pub fn createNewLines(
     allocator: std.mem.Allocator,
     lineNum: usize,
     parser: *parserModule.Parser,
-    inputFileName: []const u8)
+    baseName: []const u8)
 ![] const u8 {
 
     // Determine which code generation function to call based on the command type
@@ -126,7 +135,7 @@ pub fn createNewLines(
                 print("arg failed, error: {}", .{err});
                 return error.WritingPushFailed;
             };
-            return writer.writePushPop("push", parser.valueType(), arg, allocator, inputFileName) catch @panic("writePush failed");
+            return writer.writePushPop("push", parser.valueType(), arg, allocator, baseName) catch @panic("writePush failed");
         },
 
         // Pop operation
@@ -135,7 +144,7 @@ pub fn createNewLines(
                 print("arg failed, error: {}", .{err});
                 return error.WritingPopFailed;
             };
-            return writer.writePushPop("pop", parser.valueType(), arg, allocator, inputFileName) catch @panic("writePop failed");
+            return writer.writePushPop("pop", parser.valueType(), arg, allocator, baseName) catch @panic("writePop failed");
         },
 
         .subNum2 => {
@@ -147,4 +156,15 @@ pub fn createNewLines(
             return error.UnsupportedCommand;
         }
     }
+}
+
+pub fn getDirectoryName(path: []const u8, allocator: std.mem.Allocator) ![]const u8 {
+    // Trim any trailing slashes
+    const trimmed = std.mem.trimRight(u8, path, "/");
+
+    // Get the base name (last part of the path)
+    const base = std.fs.path.basename(trimmed);
+
+    // Duplicate it to make a heap-allocated copy
+    return try allocator.dupe(u8, base);
 }
