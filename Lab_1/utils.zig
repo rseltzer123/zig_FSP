@@ -131,26 +131,40 @@ pub fn createNewLines(
 
         // Push operation
         .push => {
-            const arg = parser.argPushPop() catch |err|{
-                print("arg failed, error: {}", .{err});
-                return error.WritingPushFailed;
-            };
-            return writer.writePushPop("push", parser.valueType(), arg, allocator, baseName) catch @panic("writePush failed");
+            const currLine = parser.getCurrentLine();
+            const input: []const u8 = currLine[2];
+            const arg_value = try std.fmt.parseInt(i32, input, 10);
+            return writer.writePushPop("push", currLine[1], arg_value, allocator, baseName) catch @panic("writePush failed");
         },
 
         // Pop operation
         .pop => {
-            const arg = parser.argPushPop() catch |err|{
-                print("arg failed, error: {}", .{err});
-                return error.WritingPopFailed;
-            };
-            return writer.writePushPop("pop", parser.valueType(), arg, allocator, baseName) catch @panic("writePop failed");
+            const currLine = parser.getCurrentLine();
+            const input: []const u8 = currLine[2];
+            const arg_value = try std.fmt.parseInt(i32, input, 10);
+            return writer.writePushPop("pop", currLine[1], arg_value, allocator, baseName) catch @panic("writePop failed");
         },
 
+        // custom subNum2 for lab 1
         .subNum2 => {
             return writer.writeSubNum2();
         },
 
+        // Branching
+        .label => {
+            const currLine = parser.getCurrentLine();
+            return writer.writeBranchLabel(currLine[1], allocator);
+        },
+        .goto => {
+            const currLine = parser.getCurrentLine();
+            return writer.writeBranchGoto(currLine[1], allocator);
+        },
+        .ifGoto => {
+            const currLine = parser.getCurrentLine();
+            return writer.writeBranchIfGoto(currLine[1], allocator);
+        },
+
+        // Error handling
         else => {
             print("Unsupported command type encountered.\n", .{});
             return error.UnsupportedCommand;

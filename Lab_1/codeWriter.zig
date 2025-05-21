@@ -205,6 +205,31 @@ pub const CodeWriter = struct {
         _ = self;
         return "// sub#2\n" ++ TWOFROMSTACK ++ "M=D-M\nM=-M\n";
     }
+
+    pub fn writeBranchLabel(self: *CodeWriter, labelName: []const u8, allocator: std.mem.Allocator) ![]const u8 {
+        _ = self;
+        return std.fmt.allocPrint(
+            allocator,
+            "// branch label\n({s})\n",
+            .{ labelName }
+        );
+    }
+    pub fn writeBranchGoto(self: *CodeWriter, labelName: []const u8, allocator: std.mem.Allocator) ![]const u8 {
+        _ = self;
+        return std.fmt.allocPrint(
+            allocator,
+            "// goto\n@{s}\n0;JMP\n",
+            .{ labelName }
+        );
+    }
+    pub fn writeBranchIfGoto(self: *CodeWriter, labelName: []const u8, allocator: std.mem.Allocator) ![]const u8 {
+        _ = self;
+        return std.fmt.allocPrint(
+            allocator,
+            "// if goto\n@SP\nAM=M-1\nD=M\n@{s}\nD;JNE\n",
+            .{ labelName }
+        );
+    }
 };
 
 

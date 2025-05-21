@@ -33,10 +33,11 @@ pub const CommandType = enum {
     push,       // push segment i
     pop,        // pop segment i
 
-    // Future: (to be implemented)
-    // label,
-    // goto,
-    // ifGoto,
+    // Branching
+    label,
+    goto,
+    ifGoto,
+
     // function,
     // call,
     // returnCommand,
@@ -62,7 +63,7 @@ pub const Parser = struct {
                     break;
                 };
                 if (line == null) break; // End of file
-            defer allocator.free(line.?);
+                defer allocator.free(line.?);
 
                 const trimmed = std.mem.trim(u8, line.?, " \r\t\n");
                 if (trimmed.len == 0 or std.mem.startsWith(u8, trimmed, "//")) continue;
@@ -145,33 +146,21 @@ pub const Parser = struct {
             return CommandType.pop;
         } else if (std.mem.eql(u8, command, "sub#2")) {
             return CommandType.subNum2;
+        } else if (std.mem.eql(u8, command, "label")) {
+            return CommandType.label;
+        } else if (std.mem.eql(u8, command, "goto")) {
+            return CommandType.goto;
+        } else if (std.mem.eql(u8, command, "if-goto")) {
+            return CommandType.ifGoto;
         } else {
             return CommandType.placeholder;
         }
     }
 
-
-    /// Returns the segment type (e.g., "local", "constant") for push/pop commands.
-    pub fn valueType(self: *Parser) []const u8 {
-        if (self.current_command == CommandType.push or self.current_command == CommandType.pop) {
-            return self.lines[self.current_index][1];
-        } else {
-            print("ERROR: command is not a push/pop.", .{});
-            return undefined;
-        }
+    pub fn getCurrentLine(self: *Parser) *const [3][]const u8 {
+        return &self.lines[self.current_index];
     }
 
-    /// Returns the index or value for push/pop commands (e.g., the "5" in `push local 5`).
-    pub fn argPushPop(self: *Parser) !i32 {
-        if (self.current_command == CommandType.push or self.current_command == CommandType.pop) {
-            const input: []const u8 = self.lines[self.current_index][2];
-            const parsed_value = try std.fmt.parseInt(i32, input, 10);
-            return parsed_value;
-        } else {
-            print("ERROR: command is not a push/pop.", .{});
-            return undefined;
-        }
-    }
 };
 
 

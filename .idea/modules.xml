@@ -3,7 +3,7 @@
   <component name="ProjectModuleManager">
     <modules>
       <module fileurl="file://$PROJECT_DIR$/Lab_0.iml" filepath="$PROJECT_DIR$/Lab_0.iml" />
-      <module fileurl="file://$PROJECT_DIR$/src/Zig.iml" filepath="$PROJECT_DIR$/src/Zig.iml" />
+      <module fileurl="file://$PROJECT_DIR$/Lab_1/Zig.iml" filepath="$PROJECT_DIR$/Lab_1/Zig.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/ZigBrains.iml" filepath="$PROJECT_DIR$/.idea/ZigBrains.iml" />
     </modules>
   </component>
