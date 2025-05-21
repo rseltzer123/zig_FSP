@@ -57,9 +57,31 @@ pub fn main() !void {
     const baseName = parsingResult.baseName;
     const wFile = parsingResult.outputFile;
     const outputFileName = parsingResult.outputFileName;
+    const numFiles = parsingResult.numFiles;
+
 
     // Initialize a CodeWriter to generate assembly code
     var writer = codeWriterModule.CodeWriter.newCodeWriter(outputFileName);
+
+    const allocator = std.heap.page_allocator;       //move before loop
+
+    // add boot to
+    if (numFiles > 1) {
+        const bootStrapCode = writer.writeCall( "Sys.init", 0, allocator) catch |err| {
+            print("ERROR writing bootstrap code:\n {}\n", .{err});
+            return;
+        };
+        const fullBootCode = std.fmt.allocPrint(allocator, "@256\nD=A\n@SP\nM=D\n{s}", .{bootStrapCode}) catch |err| {
+            print("ERROR writing bootstrap code:\n {}\n", .{err});
+            return;
+        };
+        const cFBC: []const u8 = fullBootCode;
+        const bootBytesWritten = wFile.write(cFBC) catch | err | {
+            print("ERROR while writing bootstrap code to file: {}\n", .{err});
+            return;
+        };
+        _ = bootBytesWritten;
+    }
 
     // Write the initial bootstrap code (if necessary)
     const initBytesWritten = wFile.write(writer.init()) catch |err|{
@@ -70,7 +92,9 @@ pub fn main() !void {
 
     var lineNum: usize = 13; // Line number used for label generation (especially for comparisons)
 
-    const allocator = std.heap.page_allocator;       //move before loop
+
+    // if we are dealing with multi-file function
+
 
     // Process each command in the input file
     while (parser.hasMoreCommands()){

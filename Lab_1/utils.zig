@@ -36,7 +36,9 @@ pub fn findFilesAndParse(dir: std.fs.Dir, dir_name: []const u8) !struct {
     baseName: []const u8,
     outputFile: std.fs.File,
     outputFileName: []const u8,
+    numFiles: i32,
 } {
+    var numFiles : i32 = 0;
     const allocator = std.heap.page_allocator;
     var dir_it = dir.iterate();
     var files = std.ArrayList(std.fs.File).init(allocator);
@@ -48,6 +50,7 @@ pub fn findFilesAndParse(dir: std.fs.Dir, dir_name: []const u8) !struct {
 
     while (try dir_it.next()) |entry| {
         if (entry.kind == .file and std.mem.endsWith(u8, entry.name, ".vm")) {
+            numFiles += 1;
             const file = try dir.openFile(entry.name, .{});
             try files.append(file);
             // can only track name when discovering files
@@ -82,6 +85,7 @@ pub fn findFilesAndParse(dir: std.fs.Dir, dir_name: []const u8) !struct {
         .outputFile = outputFile,
         .baseName = baseName,
         .outputFileName = outputFileName,
+        .numFiles = numFiles
     };
 }
 
@@ -163,7 +167,21 @@ pub fn createNewLines(
             const currLine = parser.getCurrentLine();
             return writer.writeBranchIfGoto(currLine[1], allocator);
         },
-
+        .function => {
+            const currLine = parser.getCurrentLine();
+            const input: []const u8 = currLine[2];
+            const arg_value = try std.fmt.parseInt(i32, input, 10);
+            return writer.writeFunction(currLine[1], arg_value, allocator);
+        },
+        .call => {
+            const currLine = parser.getCurrentLine();
+            const input: []const u8 = currLine[2];
+            const arg_value = try std.fmt.parseInt(i32, input, 10);
+            return writer.writeCall(currLine[1], arg_value, allocator);
+        },
+        .returnCommand => {
+            return writer.writeReturn(allocator);
+        },
         // Error handling
         else => {
             print("Unsupported command type encountered.\n", .{});

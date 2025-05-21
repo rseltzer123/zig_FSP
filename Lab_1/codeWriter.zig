@@ -14,11 +14,13 @@ const ONEFROMSTACK = "@SP\nA=M-1\n";              // Point to top of stack (SP-1
 /// Struct responsible for generating Hack Assembly code from VM commands
 pub const CodeWriter = struct {
     file_name: []const u8,  // Used for naming static variables: "FileName.i"
+    retCounter: i32,
 
     /// Constructs a new CodeWriter instance
     pub fn newCodeWriter(fileName: []const u8) CodeWriter {
         return CodeWriter{
             .file_name = fileName,
+            .retCounter = 1
         };
     }
 
@@ -214,6 +216,7 @@ pub const CodeWriter = struct {
             .{ labelName }
         );
     }
+
     pub fn writeBranchGoto(self: *CodeWriter, labelName: []const u8, allocator: std.mem.Allocator) ![]const u8 {
         _ = self;
         return std.fmt.allocPrint(
@@ -222,6 +225,7 @@ pub const CodeWriter = struct {
             .{ labelName }
         );
     }
+
     pub fn writeBranchIfGoto(self: *CodeWriter, labelName: []const u8, allocator: std.mem.Allocator) ![]const u8 {
         _ = self;
         return std.fmt.allocPrint(
@@ -229,6 +233,52 @@ pub const CodeWriter = struct {
             "// if goto\n@SP\nAM=M-1\nD=M\n@{s}\nD;JNE\n",
             .{ labelName }
         );
+    }
+
+    pub fn writeCall(self: *CodeWriter, funcName: []const u8, nVars: i32, allocator: std.mem.Allocator) ![]u8 {
+        var asmText = std.ArrayList(u8).init(allocator);
+        const retName = try std.fmt.allocPrint(allocator, "{s}$ret.{d}", .{funcName, self.retCounter});
+        self.retCounter += 1;
+        try asmText.writer().print("@{s}\nD=A\n@SP\nAM=M+1\nA=A-1\nM=D\n", .{retName});
+        const segments = [4][]const u8 {"LCL", "ARG", "THIS", "THAT"};
+
+        for (segments) | segment| {
+            try asmText.writer().print("@{s}\nD=M\n@SP\nAM=M+1\nA=A-1\nM=D\n", .{segment});
+        }
+
+        const num = 5 + nVars;
+
+        try asmText.writer().print("@SP\nD=M\n@LCL\nM=D\n@{d}\nD=A\n@SP\nD=M-D\n@ARG\nM=D\n@{s}\n0;JMP\n({s})\n", .{num, funcName, retName});
+
+        return asmText.toOwnedSlice();
+    }
+
+    pub fn writeFunction(self: *CodeWriter, funcName: []const u8, nVars: i32, allocator: std.mem.Allocator) ![]u8 {
+        var asmText = std.ArrayList(u8).init(allocator);
+        try asmText.writer().print("({s})\n", .{funcName});
+        var i : usize = 0;
+        
+        while ( i < nVars) {
+            try asmText.writer().writeAll("@SP\nAM=M+1\nA=A-1\nM=0\n");
+            i += 1;
+        }
+        
+        self.retCounter = 1;
+        return asmText.toOwnedSlice();
+    }
+
+    pub fn writeReturn(self: *CodeWriter, allocator: std.mem.Allocator) ![]u8 {
+        _ = self;
+        var asmText = std.ArrayList(u8).init(allocator);
+        try asmText.writer().writeAll("@LCL\nD=M\n@endF\nM=D\n@5\nA=D-A\nD=M\n@retA\nM=D\n@SP\nAM=M-1\nD=M\n@ARG\nA=M\nM=D\n@ARG\nD=M\n@SP\nM=D+1\n");
+        const segments = [4][]const u8 {"THAT","THIS", "ARG", "LCL"};
+
+        for (segments) | segment| {
+            try asmText.writer().print("@endF\nAM=M-1\nD=M\n@{s}\nM=D\n", .{segment});
+        }
+        try asmText.writer().writeAll("@retA\nA=M\n0;JMP\n");
+
+        return asmText.toOwnedSlice();
     }
 };
 

@@ -1,10 +1,11 @@
 const std = @import("std");
 const print = std.debug.print;
 
-/// Removes any comments (`//`) from a given line, returning only the code part.
+/// Removes any comments (//) from a given line, returning only the code part.
 pub fn trimComments(line: []const u8) []const u8 {
     const comment_index = std.mem.indexOf(u8, line, "//") orelse line.len;
-    return line[0..comment_index];
+    const trimmed = std.mem.trim(u8, line[0..comment_index], " \r\t\n");
+    return trimmed;
 }
 
 /// Enum representing all possible command types a VM file can contain.
@@ -38,9 +39,10 @@ pub const CommandType = enum {
     goto,
     ifGoto,
 
-    // function,
-    // call,
-    // returnCommand,
+    // Function Calls
+    function,
+    call,
+    returnCommand,
 };
 
 /// `Parser` reads and processes VM commands from a file.
@@ -152,6 +154,12 @@ pub const Parser = struct {
             return CommandType.goto;
         } else if (std.mem.eql(u8, command, "if-goto")) {
             return CommandType.ifGoto;
+        } else if (std.mem.eql(u8, command, "call")) {
+            return CommandType.call;
+        } else if (std.mem.eql(u8, command, "function")) {
+            return CommandType.function;
+        } else if (std.mem.eql(u8, command, "return")) {
+            return CommandType.returnCommand;
         } else {
             return CommandType.placeholder;
         }
