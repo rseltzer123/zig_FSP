@@ -54,7 +54,7 @@ pub fn main() !void {
 
     // distributing the tuple of return values to their respective variables
     var parser = parsingResult.parser;
-    const baseName = parsingResult.baseName;
+    // const baseName = parsingResult.baseName;
     const wFile = parsingResult.outputFile;
     const outputFileName = parsingResult.outputFileName;
     const numFiles = parsingResult.numFiles;
@@ -83,17 +83,12 @@ pub fn main() !void {
         _ = bootBytesWritten;
     }
 
-    // Write the initial bootstrap code (if necessary)
-    const initBytesWritten = wFile.write(writer.init()) catch |err|{
-        print("ERROR while writing initialization: {}\n", .{err});
-        return;
-    };
-    _ = initBytesWritten; // Ignore the actual number of bytes written
-
     var lineNum: usize = 13; // Line number used for label generation (especially for comparisons)
 
 
     // if we are dealing with multi-file function
+
+    var vmCounter: i32 = 0;
 
 
     // Process each command in the input file
@@ -103,7 +98,7 @@ pub fn main() !void {
         const cmdType = parser.current_command;
 
         // Assembly instructions for the current command
-        const newLines: []const u8 = createNewLines(cmdType,&writer,allocator,lineNum,&parser,baseName) catch |err| {
+        const newLines: []const u8 = createNewLines(cmdType,&writer,allocator,&parser, &vmCounter) catch |err| {
             print("Error while creating new lines", .{});
             return err;
         };

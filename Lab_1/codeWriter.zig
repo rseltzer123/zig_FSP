@@ -10,39 +10,31 @@ const OPLINES = 14;       // Number of lines offset for handling comparison bran
 /// Prewritten Hack Assembly snippets to pop two or one value(s) from the stack
 const TWOFROMSTACK = "@SP\nAM=M-1\nD=M\nA=A-1\n"; // Pop y into D, point to x
 const ONEFROMSTACK = "@SP\nA=M-1\n";              // Point to top of stack (SP-1)
+const BOOT: []const u8 = "@256\nD=A\n@SP\nM=D\n";
 
 /// Struct responsible for generating Hack Assembly code from VM commands
 pub const CodeWriter = struct {
     file_name: []const u8,  // Used for naming static variables: "FileName.i"
     retCounter: i32,
+    func: []const u8,
+
 
     /// Constructs a new CodeWriter instance
     pub fn newCodeWriter(fileName: []const u8) CodeWriter {
+
         return CodeWriter{
             .file_name = fileName,
-            .retCounter = 1
+            .retCounter = 1,
+            .func = "boot",
         };
     }
 
     /// Initializes the Assembly code with helper functions for boolean true/false
-    pub fn init(self: CodeWriter) []const u8 {
+    pub fn init(self: CodeWriter, allocator: std.mem.Allocator) ![]const u8 {
         _ = self;
-        return \\@14
-               \\0;JMP          // Jump over helper block to actual program start
-               \\@SP
-               \\A=M-1
-               \\M=0            // false value (0) setup
-               \\@R13
-               \\A=M
-               \\0;JMP          // return to caller
-               \\@SP
-               \\A=M-1
-               \\M=-1           // true value (-1) setup
-               \\@R13
-               \\A=M
-               \\0;JMP          // return to caller
-               \\
-               ;
+        const boot_code = try writeCall( "Sys.init 0", 0, allocator);
+        const res = try std.fmt.allocPrint(allocator, BOOT ++ "{s}", .{boot_code});
+        return res;
     }
 
     /// Writes Assembly code for addition operation
@@ -59,34 +51,55 @@ pub const CodeWriter = struct {
 
     /// Writes Assembly code for equality comparison (==)
     /// Allocator must be freed after use
-    pub fn writeEq(self: *CodeWriter, allocator: std.mem.Allocator, lineNum: usize) ![]u8 {
+    pub fn writeEq(self: *CodeWriter, allocator: std.mem.Allocator, vmCounter: i32) ![]u8 {
         _ = self;
         return std.fmt.allocPrint(
             allocator,
-            "// eq\n@{d}\nD=A\n@R13\nM=D\n" ++ TWOFROMSTACK ++ "D=M-D\n@{d}\nD;JEQ\n@{d}\n0;JMP\n",
-            .{ lineNum+OPLINES, TRUELINE, FALSELINE }
+            TWOFROMSTACK ++
+                "D=M-D\n" ++
+                "@true.{d}\nD;JEQ\n" ++
+                "@SP\nA=M-1\nM=0\n" ++
+                "@false.{d}\n0;JMP\n" ++
+                "(true.{d})\n" ++
+                "@SP\nA=M-1\nM=-1\n" ++
+                "(false.{d})\n",
+            .{ vmCounter, vmCounter, vmCounter, vmCounter },
         );
     }
 
     /// Writes Assembly code for greater-than comparison (>)
     /// Allocator must be freed after use
-    pub fn writeGt(self: *CodeWriter, allocator: std.mem.Allocator, lineNum: usize) ![]u8 {
+    pub fn writeGt(self: *CodeWriter, allocator: std.mem.Allocator, vmCounter: i32) ![]u8 {
         _ = self;
         return std.fmt.allocPrint(
             allocator,
-            "// gt\n@{d}\nD=A\n@R13\nM=D\n" ++ TWOFROMSTACK ++ "D=M-D\n@{d}\nD;JGT\n@{d}\n0;JMP\n",
-            .{ lineNum+OPLINES, TRUELINE, FALSELINE }
+            TWOFROMSTACK ++
+                "D=M-D\n" ++
+                "@true.{d}\nD;JGT\n" ++
+                "@SP\nA=M-1\nM=0\n" ++
+                "@false.{d}\n0;JMP\n" ++
+                "(true.{d})\n" ++
+                "@SP\nA=M-1\nM=-1\n" ++
+                "(false.{d})\n",
+            .{ vmCounter, vmCounter, vmCounter, vmCounter },
         );
     }
 
     /// Writes Assembly code for less-than comparison (<)
     /// Allocator must be freed after use
-    pub fn writeLt(self: *CodeWriter, allocator: std.mem.Allocator, lineNum: usize) ![]u8 {
+    pub fn writeLt(self: *CodeWriter, allocator: std.mem.Allocator, vmCounter: i32) ![]u8 {
         _ = self;
         return std.fmt.allocPrint(
             allocator,
-            "// lt\n@{d}\nD=A\n@R13\nM=D\n" ++ TWOFROMSTACK ++ "D=M-D\n@{d}\nD;JLT\n@{d}\n0;JMP\n",
-            .{ lineNum+OPLINES, TRUELINE, FALSELINE }
+            TWOFROMSTACK ++
+                "D=M-D\n" ++
+                "@true.{d}\nD;JLT\n" ++
+                "@SP\nA=M-1\nM=0\n" ++
+                "@false.{d}\n0;JMP\n" ++
+                "(true.{d})\n" ++
+                "@SP\nA=M-1\nM=-1\n" ++
+                "(false.{d})\n",
+            .{ vmCounter, vmCounter, vmCounter, vmCounter },
         );
     }
 
@@ -209,35 +222,32 @@ pub const CodeWriter = struct {
     }
 
     pub fn writeBranchLabel(self: *CodeWriter, labelName: []const u8, allocator: std.mem.Allocator) ![]const u8 {
-        _ = self;
         return std.fmt.allocPrint(
             allocator,
-            "// branch label\n({s})\n",
-            .{ labelName }
+            "// branch label\n({s}${s})\n",
+            .{ self.func, labelName }
         );
     }
 
     pub fn writeBranchGoto(self: *CodeWriter, labelName: []const u8, allocator: std.mem.Allocator) ![]const u8 {
-        _ = self;
         return std.fmt.allocPrint(
             allocator,
-            "// goto\n@{s}\n0;JMP\n",
-            .{ labelName }
+            "// goto\n@{s}${s}\n0;JMP\n",
+            .{ self.func, labelName }
         );
     }
 
     pub fn writeBranchIfGoto(self: *CodeWriter, labelName: []const u8, allocator: std.mem.Allocator) ![]const u8 {
-        _ = self;
         return std.fmt.allocPrint(
             allocator,
-            "// if goto\n@SP\nAM=M-1\nD=M\n@{s}\nD;JNE\n",
-            .{ labelName }
+            "// if goto\n@SP\nAM=M-1\nD=M\n@{s}${s}\nD;JNE\n",
+            .{ self.func, labelName }
         );
     }
 
     pub fn writeCall(self: *CodeWriter, funcName: []const u8, nVars: i32, allocator: std.mem.Allocator) ![]u8 {
         var asmText = std.ArrayList(u8).init(allocator);
-        const retName = try std.fmt.allocPrint(allocator, "{s}$ret.{d}", .{funcName, self.retCounter});
+        const retName = try std.fmt.allocPrint(allocator, "{s}$ret.{d}", .{self.func, self.retCounter});
         self.retCounter += 1;
         try asmText.writer().print("@{s}\nD=A\n@SP\nAM=M+1\nA=A-1\nM=D\n", .{retName});
         const segments = [4][]const u8 {"LCL", "ARG", "THIS", "THAT"};
@@ -262,7 +272,8 @@ pub const CodeWriter = struct {
             try asmText.writer().writeAll("@SP\nAM=M+1\nA=A-1\nM=0\n");
             i += 1;
         }
-        
+
+        self.func = funcName;
         self.retCounter = 1;
         return asmText.toOwnedSlice();
     }

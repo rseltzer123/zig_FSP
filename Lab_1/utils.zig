@@ -47,12 +47,18 @@ pub fn findFilesAndParse(dir: std.fs.Dir, dir_name: []const u8) !struct {
     var outputFileName: []const u8 = "";
     var outputFile: std.fs.File = undefined;
 
+    var fileNames  = std.ArrayList([]const u8).init(allocator);
+    defer fileNames.deinit();
 
     while (try dir_it.next()) |entry| {
         if (entry.kind == .file and std.mem.endsWith(u8, entry.name, ".vm")) {
             numFiles += 1;
             const file = try dir.openFile(entry.name, .{});
             try files.append(file);
+
+            const nameDupe = try std.heap.page_allocator.dupe(u8, entry.name[0..entry.name.len - 3]);
+            try fileNames.append(nameDupe);
+
             // can only track name when discovering files
             if (files.items.len == 1){
                 baseName = try std.heap.page_allocator.dupe(u8, entry.name[0..entry.name.len - 3]);
@@ -69,7 +75,7 @@ pub fn findFilesAndParse(dir: std.fs.Dir, dir_name: []const u8) !struct {
     }
 
     // Create parser from all .vm files
-    const parser = try parserModule.Parser.newParser(files.items);
+    const parser = try parserModule.Parser.newParser(files.items, fileNames.items);
 
 
     outputFileName = try std.fmt.allocPrint(allocator, "{s}.asm", .{baseName});
@@ -95,10 +101,12 @@ pub fn createNewLines(
     cmdType: parserModule.CommandType,
     writer: *codeWriterModule.CodeWriter,
     allocator: std.mem.Allocator,
-    lineNum: usize,
     parser: *parserModule.Parser,
-    baseName: []const u8)
+    // baseName: []const u8,
+    vmCounter: *i32)
 ![] const u8 {
+
+    vmCounter.* += 1;
 
     // Determine which code generation function to call based on the command type
     switch (cmdType) {
@@ -110,13 +118,13 @@ pub fn createNewLines(
             return writer.writeSub();
         },
         .eq => {
-            return writer.writeEq(allocator, lineNum) catch @panic("writeEq failed");
+            return writer.writeEq(allocator, vmCounter.*) catch @panic("writeEq failed");
         },
         .gt => {
-            return writer.writeGt(allocator, lineNum) catch @panic("writeGt failed");
+            return writer.writeGt(allocator, vmCounter.*) catch @panic("writeGt failed");
         },
         .lt => {
-            return writer.writeLt(allocator, lineNum) catch @panic("writeLt failed");
+            return writer.writeLt(allocator, vmCounter.*) catch @panic("writeLt failed");
         },
         .andCommand => {
             return writer.writeAnd();
@@ -138,7 +146,7 @@ pub fn createNewLines(
             const currLine = parser.getCurrentLine();
             const input: []const u8 = currLine[2];
             const arg_value = try std.fmt.parseInt(i32, input, 10);
-            return writer.writePushPop("push", currLine[1], arg_value, allocator, baseName) catch @panic("writePush failed");
+            return writer.writePushPop("push", currLine[1], arg_value, allocator, currLine[3]) catch @panic("writePush failed");
         },
 
         // Pop operation
@@ -146,7 +154,7 @@ pub fn createNewLines(
             const currLine = parser.getCurrentLine();
             const input: []const u8 = currLine[2];
             const arg_value = try std.fmt.parseInt(i32, input, 10);
-            return writer.writePushPop("pop", currLine[1], arg_value, allocator, baseName) catch @panic("writePop failed");
+            return writer.writePushPop("pop", currLine[1], arg_value, allocator, currLine[3]) catch @panic("writePop failed");
         },
 
         // custom subNum2 for lab 1

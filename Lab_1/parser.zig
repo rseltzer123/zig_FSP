@@ -47,13 +47,15 @@ pub const CommandType = enum {
 
 /// `Parser` reads and processes VM commands from a file.
 pub const Parser = struct {
-    lines: []const [3][]const u8,    // Array of parsed lines: each with up to 3 parts (command, arg1, arg2)
+    lines: []const [4][]const u8,    // Array of parsed lines: each with up to 3 parts (command, arg1, arg2)
     current_index: usize,            // Current line index being processed
     current_command: CommandType,    // Type of current command (updated via advance)
 
-    pub fn newParser(files: []std.fs.File) !Parser {
+    pub fn newParser(files: []std.fs.File, fileNames: [][]const u8) !Parser {
         const allocator = std.heap.page_allocator;
-        var lines_list = std.ArrayList([3][]const u8).init(allocator);
+        var lines_list = std.ArrayList([4][]const u8).init(allocator);
+
+        var i: usize = 0;
 
         for (files) |file| {
             var reader = std.io.bufferedReader(file.reader());
@@ -72,7 +74,7 @@ pub const Parser = struct {
 
                 const line_no_comment = trimComments(trimmed);
                 var it = std.mem.tokenizeAny(u8, line_no_comment, " \n");
-                var row: [3][]const u8 = undefined;
+                var row: [4][]const u8 = undefined;
                 var j: usize = 0;
 
                 while (it.next()) |word| {
@@ -89,8 +91,11 @@ pub const Parser = struct {
                 while (j < 3) : (j += 1) {
                     row[j] = "";
                 }
+                row[3] = fileNames[i];
+
                 try lines_list.append(row);
             }
+            i += 1;
         }
 
         return Parser{
@@ -165,7 +170,7 @@ pub const Parser = struct {
         }
     }
 
-    pub fn getCurrentLine(self: *Parser) *const [3][]const u8 {
+    pub fn getCurrentLine(self: *Parser) *const [4][]const u8 {
         return &self.lines[self.current_index];
     }
 
